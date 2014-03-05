@@ -1,5 +1,5 @@
-PenE
-====
+AccountingReporter
+==================
 
 GridEngine accounting metric reporter.
 
