@@ -5,6 +5,10 @@ import MySQLdb as mdb
 import pygal
 import sys
 
+from functools import wraps
+
+class GEConnectorException(Exception):
+    pass
 
 class GEConnector:
     """
@@ -19,7 +23,6 @@ class GEConnector:
         "astro": "local",
         "biomed": "grid",
         "cms": "grid",
-        "dteam": "grid",
         "hidra": "local",
     }
 
@@ -71,9 +74,7 @@ class GEConnector:
         Organizes data (summing) by the infrastructure type.
         """
         d = {}
-        for item in data:
-            group, value = item
-            value = value[0]
+        for group, value in data.iteritems():
             try:
                 d[self.GROUPS_TO_INFRASTRUCTURE[group]] += value
             except KeyError:
@@ -81,29 +82,40 @@ class GEConnector:
 
         return d
 
+    def _group_by(self, d, group_by="group"):
+        """
+        Organizes the data according to the given group.
+        """
+        GROUP_FUNCS = {
+            "infrastructure": self._group_by_infrastructure,
+        }
+        try:
+            return GROUP_FUNCS[group_by](d)
+        except KeyError:
+            return d
+
     def query(self, parameter, group_by="ge_group"):
         """
         Performs a SQL query based on the parameter requested.
         """
-        # Post functions represent the way to group/transform the data
-        # accordingly based on the group_by value.
-        POST_FUNCS = {
-            "infrastructure": self._group_by_infrastructure,
-        }
-        post_key = group_by
-        if group_by == "infrastructure":
-            group_by = "ge_group"
-
         conn = mdb.connect(self.dbserver, self.dbuser, self.dbpasswd, self.dbname);
         with contextlib.closing(conn):
             curs = conn.cursor()
             curs.execute(self._format_query(self.QUERIES_BY_PARAMETER[parameter], group_by))
             res = self._format_result(curs.fetchall())
-            try:
-                return POST_FUNCS[post_key](res)
-            except KeyError:
-                return res
+            return res
 
+    def group(func):
+        @wraps(func)
+        def _group(self, *args, **kw):
+            post_key = kw["group_by"]
+            if kw["group_by"] == "infrastructure":
+                kw["group_by"] = "ge_group"
+            output = func(self, *args, **kw)
+            return self._group_by(output, post_key)
+        return _group
+
+    @group
     def get_cpu_time(self, group_by="ge_group"):
         """
         Retrieves the CPU time grouped by 'ge_group'.
@@ -118,6 +130,7 @@ class GEConnector:
                 d[index] = cpu_time
         return d
 
+    @group
     def get_wall_clock(self, group_by="ge_group"):
         """
         Retrieves the WALLCLOCK time grouped by 'ge_group'.
@@ -133,12 +146,21 @@ class GEConnector:
                 d[index] = wall_clock * slots
         return d
 
-    def get_efficiency(self, group_by="ge_group"):
+    def compute_efficiency(self, group_by="ge_group"):
         """
         Retrieves the CPU time grouped by 'ge_group'.
         """
-        pass
-
+        d = {}
+        d_cpu  = self.get_cpu_time()
+        d_wall = self.get_wall_clock()
+        if len(d_cpu.keys()) != len(d_wall.keys()):
+            raise GEConnectorException("Cannot compute efficiency. Groups do not match!")
+        for k,v in d_cpu.iteritems():
+            try:
+                d[k] = d_cpu[k]/d_wall[k]
+            except ZeroDivisionError:
+                d[k] = 0
+        return d
 
 
 def render_chart(d, title, filename, type="pie"):
@@ -157,3 +179,4 @@ def render_chart(d, title, filename, type="pie"):
     for k,v in d.iteritems():
         chart.add(k,v)
     chart.render_to_png(filename=filename, dpi=72)
+
