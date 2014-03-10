@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 
+import cairosvg
 import contextlib
+import logging
 import MySQLdb as mdb
 import pygal
 import sys
 
 from functools import wraps
+from pyPdf import PdfFileWriter, PdfFileReader
+from tempfile import NamedTemporaryFile
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 class GEConnectorException(Exception):
     pass
@@ -33,8 +40,8 @@ class GEConnector:
         "ge_start_time<=ge_end_time",
     ]
 
-    def __init__(self, dbhost, dbuser, dbpasswd, dbname):
-        self.dbhost   = dbhost
+    def __init__(self, dbserver, dbuser, dbpasswd, dbname):
+        self.dbserver = dbserver
         self.dbuser   = dbuser
         self.dbpasswd = dbpasswd
         self.dbname   = dbname
@@ -101,16 +108,21 @@ class GEConnector:
         conn = mdb.connect(self.dbserver, self.dbuser, self.dbpasswd, self.dbname);
         with contextlib.closing(conn):
             curs = conn.cursor()
-            curs.execute(self._format_query(self.QUERIES_BY_PARAMETER[parameter], group_by))
+            cmd = self._format_query(self.QUERIES_BY_PARAMETER[parameter], group_by)
+            logger.debug("MySQL command: `%s`" % cmd)
+            curs.execute(cmd)
             res = self._format_result(curs.fetchall())
             return res
 
     def group(func):
         @wraps(func)
         def _group(self, *args, **kw):
-            post_key = kw["group_by"]
-            if kw["group_by"] == "infrastructure":
-                kw["group_by"] = "ge_group"
+            try:
+                post_key = kw["group_by"]
+                if kw["group_by"] == "infrastructure":
+                    kw["group_by"] = "ge_group"
+            except KeyError:
+                post_key = "group"
             output = func(self, *args, **kw)
             return self._group_by(output, post_key)
         return _group
@@ -146,7 +158,7 @@ class GEConnector:
                 d[index] = wall_clock * slots
         return d
 
-    def compute_efficiency(self, group_by="ge_group"):
+    def get_efficiency(self, group_by="ge_group"):
         """
         Retrieves the CPU time grouped by 'ge_group'.
         """
@@ -162,21 +174,97 @@ class GEConnector:
                 d[k] = 0
         return d
 
+#################
+# -- Charts -- ##
+#################
 
-def render_chart(d, title, filename, type="pie"):
+class Chart:
     """
-    Renders to 'filename' a pygal's pie chart.
-        d: a dictionary with (k,v) data.
-        title: title of the chart.
-        filename: file location (full path) for the graph.
+    Generates charts using PyGal.
     """
-    chart_types = {
-        "pie": pygal.Pie(),
-        "horizontal_bar": pygal.HorizontalBar()
-    }
-    chart = chart_types[type]
-    chart.title = title
-    for k,v in d.iteritems():
-        chart.add(k,v)
-    chart.render_to_png(filename=filename, dpi=72)
+    def __init__(self, d, title='', type="pie", filename=None):
+        """
+        Expects a dictionary with k,v pairs to be plotted.
 
+        If filename is defined, it assumes that the chart has to
+        renderized in this file.
+        """
+        self.d = d
+        self.title = title
+        self.type = type
+        self.filename = filename
+
+    def render(self):
+        """
+        Renders to a pygal's chart.
+        """
+        chart_types = {
+            "pie": pygal.Pie(),
+            "horizontal_bar": pygal.HorizontalBar()
+        }
+        chart = chart_types[self.type]
+        chart.title = self.title
+        for k,v in self.d.iteritems():
+            chart.add(k,v)
+        if self.filename:
+            chart.render_to_file(filename=self.filename)
+        else:
+            chart.render()
+
+###################
+# -- Reporter -- ##
+###################
+
+class PDFReporter:
+    """
+    Generates a report with the chart content.
+    """
+    def __init__(self, filename, objs=[]):
+        """
+        A PDF report is comprised of several objects. These objects
+        must have a render() method.
+            filename: name of the PDF file.
+            objs: objects to be renderized in the document.
+        """
+        self.filename = filename
+        self.objs = objs
+        self.pdf_list = []
+
+    def append(self, obj):
+        """
+        Appends an object to the report.
+        """
+        self.objs.append(obj)
+
+    def generate(self):
+        """
+        Generates the PDF report by:
+            1) Calling object's render() method (creates SVG file).
+            2) Transforms SVG content to PDF content.
+            3) Merges the resultant PDF files into the final report.
+        """
+        for obj in self.objs:
+            # Temporary SVG
+            chart_svg_file = NamedTemporaryFile()
+            obj.filename = chart_svg_file.name
+            obj.render()
+            logger.debug(("'%s' graph has been generated as SVG under"
+                          "'%s'"
+                          % (obj.title, obj.filename)))
+            # Temporary PDF
+            chart_pdf_file = NamedTemporaryFile()
+            chart_pdf_file.write(cairosvg.svg2pdf(url=obj.filename))
+            logger.debug(("'%s' graph has been generated as PDF under"
+                          "'%s'"
+                          % (obj.title, chart_pdf_file.name)))
+            self.pdf_list.append(chart_pdf_file)
+            chart_svg_file.close()
+        # PDF
+        output = PdfFileWriter()
+        for pdf in self.pdf_list:
+            input1 = PdfFileReader(pdf)
+            output.addPage(input1.getPage(0))
+        outputStream = file(self.filename, "wb")
+        output.write(outputStream)
+        outputStream.close()
+        logger.debug("Result PDF created under '%s'" % self.filename)
