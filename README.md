@@ -38,6 +38,8 @@ Generate PDF reports.
 
 # Usage
 ```python
+from reporter import Report
+
 report = Report(
     "pdf",
     {
