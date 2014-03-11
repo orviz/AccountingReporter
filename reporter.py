@@ -328,9 +328,9 @@ class PDFRenderer:
         logger.debug("Result PDF created under '%s'" % self.filename)
 
 
-#####################
-## -- Renderers -- ##
-#####################
+######################
+## -- Main Class -- ##
+######################
 
 class Report:
     """
@@ -356,7 +356,7 @@ class Report:
 
     def _get_connector_kwargs(self, d):
         """
-        Fills the keyword argumnents that will be passwd to the
+        Fills the keyword argumnents that will be passed to the
         connector method.
         """
         CONNECTOR_KWARGS = [
