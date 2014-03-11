@@ -14,10 +14,24 @@ from tempfile import NamedTemporaryFile
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-class GEConnectorException(Exception):
+class ConnectorException(Exception):
     pass
 
-class GEConnector:
+class Connector:
+    def get_cpu_time(self, **kw):
+        raise NotImplementedError
+
+    def get_efficiency(self, **kw):
+        raise NotImplementedError
+
+    def get(self, metric, **kw):
+        METRICS = {
+            "cpu": self.get_cpu_time,
+            "efficiency": self.get_efficiency,
+        }
+        return METRICS[metric](**kw)
+
+class GEConnector(Connector):
     """
     Retrieves accounting data from a GridEngine system through SQL.
     """
@@ -172,7 +186,7 @@ class GEConnector:
         d_cpu  = self.get_cpu_time()
         d_wall = self.get_wall_clock()
         if len(d_cpu.keys()) != len(d_wall.keys()):
-            raise GEConnectorException("Cannot compute efficiency. Groups do not match!")
+            raise ConnectorException("Cannot compute efficiency. Groups do not match!")
         for k,v in d_cpu.iteritems():
             try:
                 d[k] = d_cpu[k]/d_wall[k]
