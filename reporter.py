@@ -50,13 +50,8 @@ class GEConnector(Connector):
         "astro": "local",
         "biomed": "grid",
         "cms": "grid",
-        "cmspj": "grid",
-        "cmsprd": "grid",
-        "computacio": "local",
         "dteam": "grid",
         "hidra": "local",
-        "ops": "grid",
-        "opssgm": "grid",
     }
 
     DEFAULT_CONDITIONS = [
@@ -66,18 +61,16 @@ class GEConnector(Connector):
         "ge_start_time<=ge_end_time",
     ]
 
+    FIELD_MAPPING = {
+        "start_time": "ge_start_time",
+        "end_time"  : "ge_end_time",
+    }
+
     def __init__(self, dbserver, dbuser, dbpasswd, dbname):
         self.dbserver = dbserver
         self.dbuser   = dbuser
         self.dbpasswd = dbpasswd
         self.dbname   = dbname
-
-    def _format_query(self, *args):
-        """
-        Adds the default WHERE conditions as well as the group by statement.
-        """
-        return " ".join(["%s WHERE", " AND ".join([cond for cond in self.DEFAULT_CONDITIONS]),
-                         "GROUP BY %s" ]) % args
 
     def _format_value(self, *args):
         """
@@ -101,6 +94,21 @@ class GEConnector(Connector):
               same index (t[0]) appears multiple times.
         """
         return [ (item[0], self._format_value(*item[1:])) for item in data ]
+
+    def _format_query(self, *args, **kw):
+        """
+        Adds the default WHERE conditions as well as the group by statement.
+        """
+        CONDITION_OPERATORS = {
+            "ge_start_time": ">=",
+            "ge_end_time"  : "<=",
+        }
+        condition_list = [cond for cond in self.DEFAULT_CONDITIONS]
+        for k,v in kw.iteritems():
+            condition_list.extend([" ".join([k, CONDITION_OPERATORS[k], "'%s'" % v])])
+
+        return " ".join(["%s WHERE", " AND ".join(condition_list),
+                         "GROUP BY %s" ]) % args
 
     def _group_by_infrastructure(self, data):
         """
@@ -127,40 +135,59 @@ class GEConnector(Connector):
         except KeyError:
             return d
 
-    def query(self, parameter, group_by="ge_group"):
+    def query(self, parameter, group_by="ge_group", conditions=None):
         """
         Performs a SQL query based on the parameter requested.
         """
-        conn = mdb.connect(self.dbserver, self.dbuser, self.dbpasswd, self.dbname);
+        conn = mdb.connect(self.dbserver, self.dbuser, self.dbpasswd, self.dbname)
         with contextlib.closing(conn):
             curs = conn.cursor()
-            cmd = self._format_query(self.QUERIES_BY_PARAMETER[parameter], group_by)
+            #cmd = self._format_query(self.QUERIES_BY_PARAMETER[parameter], group_by, conditions)
+            cmd = self._format_query(self.QUERIES_BY_PARAMETER[parameter], group_by, **conditions)
             logger.debug("MySQL command: `%s`" % cmd)
             curs.execute(cmd)
             res = self._format_result(curs.fetchall())
             return res
 
     def group(func):
+        """
+        Decorator method to organize the keyword arguments.
+            'group_by': if other than 'group', compute it as
+                        'group' and post-group the result as
+                        the initial value (aka post_grouping).
+            rest of kw: under 'conditions' kw.
+        """
         @wraps(func)
         def _group(self, *args, **kw):
+            logging.debug("Received keyword arguments: %s" % kw)
+            d = {}
+            post_grouping = "group"
             try:
-                post_key = kw["group_by"]
-                kw["group_by"] = "ge_group"
-                if kw["group_by"] == "infrastructure":
-                    kw["group_by"] = "ge_group"
+                d["group_by"] = kw.pop("group_by")
+                # special cases
+                if d["group_by"] == "infrastructure":
+                    post_grouping = d["group_by"]
             except KeyError:
-                post_key = "group"
-            output = func(self, *args, **kw)
-            return self._group_by(output, post_key)
+                pass
+            d["group_by"] = "ge_group"
+            d["conditions"] = {}
+            for k,v in kw.iteritems():
+                d["conditions"].update({ self.FIELD_MAPPING[k]: v })
+            logging.debug("Resultant keyword arguments: %s" % d)
+            logging.debug("Calling decorated function '%s'" % func.func_name)
+            output = func(self, *args, **d)
+            logging.debug("Post-Grouping results by '%s'" % post_grouping)
+            return self._group_by(output, post_grouping)
         return _group
 
     @group
-    def get_cpu_time(self, group_by="ge_group"):
+    def get_cpu_time(self, group_by="ge_group", conditions=None):
         """
         Computes the CPU time grouped by 'ge_group' in hours.
+            conditions: extra conditions to be added to the SQL query.
         """
         d = {}
-        for item in self.query("cpu_time", group_by=group_by):
+        for item in self.query("cpu_time", group_by=group_by, conditions=conditions):
             index, values = item
             cpu_time = self._to_hours(values[0])
             try:
@@ -170,13 +197,14 @@ class GEConnector(Connector):
         return d
 
     @group
-    def get_wall_clock(self, group_by="ge_group"):
+    def get_wall_clock(self, group_by="ge_group", conditions=None):
         """
         Retrieves the WALLCLOCK time grouped by 'ge_group' in hours.
             Number of slots being used must be taken into account.
+            conditions: extra conditions to be added to the SQL query.
         """
         d = {}
-        for item in self.query("wall_clock", group_by="ge_slots,%s" % group_by):
+        for item in self.query("wall_clock", group_by="ge_slots,%s" % group_by, conditions=conditions):
             index, values = item
             wall_clock, slots = values
             wall_clock = self._to_hours(wall_clock)
@@ -186,13 +214,14 @@ class GEConnector(Connector):
                 d[index] = wall_clock * slots
         return d
 
-    def get_efficiency(self, group_by="ge_group"):
+    def get_efficiency(self, group_by="ge_group", conditions=None):
         """
         Retrieves the CPU time grouped by 'ge_group'.
+            conditions: extra conditions to be added to the SQL query.
         """
         d = {}
-        d_cpu  = self.get_cpu_time(group_by=group_by)
-        d_wall = self.get_wall_clock(group_by=group_by)
+        d_cpu  = self.get_cpu_time(group_by=group_by, conditions=conditions)
+        d_wall = self.get_wall_clock(group_by=group_by, conditions=conditions)
         if len(d_cpu.keys()) != len(d_wall.keys()):
             raise ConnectorException("Cannot compute efficiency. Groups do not match!")
         for k,v in d_cpu.iteritems():
@@ -325,6 +354,21 @@ class Report:
         self.renderer = self.RENDERERS[renderer](**kw)
         self.task     = task
 
+    def _get_connector_kwargs(self, d):
+        """
+        Fills the keyword argumnents that will be passwd to the
+        connector method.
+        """
+        CONNECTOR_KWARGS = [
+            # GEConnector
+            "group_by", "start_time", "end_time",
+        ]
+        d_kwargs = {}
+        for k in d.keys():
+            if k in CONNECTOR_KWARGS:
+                d_kwargs[k] = d[k]
+        return d_kwargs
+
     def collect(self):
         """
         Gathers metric data.
@@ -335,7 +379,7 @@ class Report:
             self.conn = self.CONNECTORS[conf["connector"]]
             logging.debug("(Connector: %s, Metric: %s)"
                           % (conf["connector"], conf["metric"]))
-            d = self.conn.get(conf["metric"], **{ "group_by": conf["group_by"] })
+            d = self.conn.get(conf["metric"], **self._get_connector_kwargs(conf))
             logging.debug("Result from connector: '%s'" % d)
 
             try:
