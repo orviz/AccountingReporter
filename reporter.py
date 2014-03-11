@@ -30,7 +30,8 @@ class Connector:
 
     def get(self, metric, **kw):
         METRICS = {
-            "cpu": self.get_cpu_time,
+            "cpu"       : self.get_cpu_time,
+            "wallclock" : self.get_wall_clock,
             "efficiency": self.get_efficiency,
         }
         return METRICS[metric](**kw)
