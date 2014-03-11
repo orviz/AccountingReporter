@@ -18,6 +18,10 @@ class ConnectorException(Exception):
     pass
 
 class Connector:
+    # FIXME this method should not be inside any connector class
+    def _to_hours(self, seconds):
+        return round((float(seconds)/3600), 2)
+
     def get_cpu_time(self, **kw):
         raise NotImplementedError
 
@@ -30,6 +34,7 @@ class Connector:
             "efficiency": self.get_efficiency,
         }
         return METRICS[metric](**kw)
+
 
 class GEConnector(Connector):
     """
@@ -139,6 +144,7 @@ class GEConnector(Connector):
         def _group(self, *args, **kw):
             try:
                 post_key = kw["group_by"]
+                kw["group_by"] = "ge_group"
                 if kw["group_by"] == "infrastructure":
                     kw["group_by"] = "ge_group"
             except KeyError:
@@ -150,12 +156,12 @@ class GEConnector(Connector):
     @group
     def get_cpu_time(self, group_by="ge_group"):
         """
-        Retrieves the CPU time grouped by 'ge_group'.
+        Computes the CPU time grouped by 'ge_group' in hours.
         """
         d = {}
         for item in self.query("cpu_time", group_by=group_by):
             index, values = item
-            cpu_time = values[0]
+            cpu_time = self._to_hours(values[0])
             try:
                 d[index] += cpu_time
             except KeyError:
@@ -165,13 +171,14 @@ class GEConnector(Connector):
     @group
     def get_wall_clock(self, group_by="ge_group"):
         """
-        Retrieves the WALLCLOCK time grouped by 'ge_group'.
+        Retrieves the WALLCLOCK time grouped by 'ge_group' in hours.
             Number of slots being used must be taken into account.
         """
         d = {}
         for item in self.query("wall_clock", group_by="ge_slots,%s" % group_by):
             index, values = item
             wall_clock, slots = values
+            wall_clock = self._to_hours(wall_clock)
             try:
                 d[index] += wall_clock * slots
             except KeyError:
@@ -183,23 +190,16 @@ class GEConnector(Connector):
         Retrieves the CPU time grouped by 'ge_group'.
         """
         d = {}
-        d_cpu  = self.get_cpu_time()
-        d_wall = self.get_wall_clock()
+        d_cpu  = self.get_cpu_time(group_by=group_by)
+        d_wall = self.get_wall_clock(group_by=group_by)
         if len(d_cpu.keys()) != len(d_wall.keys()):
             raise ConnectorException("Cannot compute efficiency. Groups do not match!")
         for k,v in d_cpu.iteritems():
             try:
-                d[k] = d_cpu[k]/d_wall[k]
+                d[k] = round(((d_cpu[k]/d_wall[k])*100), 2)
             except ZeroDivisionError:
                 d[k] = 0
         return d
-
-    def get(self, metric, **kw):
-        METRICS = {
-            "cpu": self.get_cpu_time,
-            "efficiency": self.get_efficiency,
-        }
-        return METRICS[metric](**kw)
 
 
 ##################
@@ -310,7 +310,7 @@ class Report:
         "pdf": PDFRenderer,
     }
     CONNECTORS = {
-        "ge": GEConnector('localhost', 'root', '*******', 'ge_accounting'),
+        "ge": GEConnector('localhost', 'root', '******', 'ge_accounting'),
     }
 
     def __init__(self, renderer, task, **kw):
