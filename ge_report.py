@@ -89,7 +89,7 @@ class GEConnector:
 
         return d
 
-    def _group_by(self, d, group_by="group"):
+    def _group_by(self, d, group_by="ge_group"):
         """
         Organizes the data according to the given group.
         """
@@ -122,7 +122,7 @@ class GEConnector:
                 if kw["group_by"] == "infrastructure":
                     kw["group_by"] = "ge_group"
             except KeyError:
-                post_key = "group"
+                post_key = "ge_group"
             output = func(self, *args, **kw)
             return self._group_by(output, post_key)
         return _group
