@@ -30,7 +30,13 @@ class GEConnector:
         "astro": "local",
         "biomed": "grid",
         "cms": "grid",
+        "cmspj": "grid",
+        "cmsprd": "grid",
+        "computacio": "local",
+        "dteam": "grid",
         "hidra": "local",
+        "ops": "grid",
+        "opssgm": "grid",
     }
 
     DEFAULT_CONDITIONS = [
@@ -89,7 +95,7 @@ class GEConnector:
 
         return d
 
-    def _group_by(self, d, group_by="ge_group"):
+    def _group_by(self, d, group_by="group"):
         """
         Organizes the data according to the given group.
         """
@@ -122,7 +128,7 @@ class GEConnector:
                 if kw["group_by"] == "infrastructure":
                     kw["group_by"] = "ge_group"
             except KeyError:
-                post_key = "ge_group"
+                post_key = "group"
             output = func(self, *args, **kw)
             return self._group_by(output, post_key)
         return _group
@@ -174,9 +180,17 @@ class GEConnector:
                 d[k] = 0
         return d
 
-#################
-# -- Charts -- ##
-#################
+    def get(self, metric, **kw):
+        METRICS = {
+            "cpu": self.get_cpu_time,
+            "efficiency": self.get_efficiency,
+        }
+        return METRICS[metric](**kw)
+
+
+##################
+## -- Charts -- ##
+##################
 
 class Chart:
     """
@@ -211,15 +225,15 @@ class Chart:
         else:
             chart.render()
 
-###################
-# -- Reporter -- ##
-###################
+#####################
+## -- Renderers -- ##
+#####################
 
-class PDFReporter:
+class PDFRenderer:
     """
     Generates a report with the chart content.
     """
-    def __init__(self, filename, objs=[]):
+    def __init__(self, filename, objs=[], **kw):
         """
         A PDF report is comprised of several objects. These objects
         must have a render() method.
@@ -236,7 +250,7 @@ class PDFReporter:
         """
         self.objs.append(obj)
 
-    def generate(self):
+    def render(self):
         """
         Generates the PDF report by:
             1) Calling object's render() method (creates SVG file).
@@ -268,3 +282,59 @@ class PDFReporter:
         output.write(outputStream)
         outputStream.close()
         logger.debug("Result PDF created under '%s'" % self.filename)
+
+
+#####################
+## -- Renderers -- ##
+#####################
+
+class Report:
+    """
+    Main class, triggers reports based on the input given.
+    """
+    RENDERERS = {
+        "pdf": PDFRenderer,
+    }
+    CONNECTORS = {
+        "ge": GEConnector('localhost', 'root', '*******', 'ge_accounting'),
+    }
+
+    def __init__(self, renderer, task, **kw):
+        """
+        renderer: type of report (supported: RENDERERS.keys())
+        task: dictionary with the metrics to be gathered.
+        """
+        logging.debug("New report requested (TYPE <%s>)" % renderer)
+        logging.debug("TASKs: %s ; KEYWORD ARGUMENTS: %s"
+                      % (task, kw))
+        self.renderer = self.RENDERERS[renderer](**kw)
+        self.task     = task
+
+    def collect(self):
+        """
+        Gathers metric data.
+        """
+        for title, conf in self.task.iteritems():
+            logging.info("Gathering data from metric '%s'" % title)
+
+            self.conn = self.CONNECTORS[conf["connector"]]
+            logging.debug("(Connector: %s, Metric: %s)"
+                          % (conf["connector"], conf["metric"]))
+            d = self.conn.get(conf["metric"], **{ "group_by": conf["group_by"] })
+            logging.debug("Result from connector: '%s'" % d)
+
+            try:
+                chart = Chart(d, title, type=conf["chart"])
+                logging.debug("Metric will be displayed as a chart, type <%s>"
+                              % conf["chart"])
+                self.renderer.append(chart)
+                logging.debug(("Chart appended to report's list of "
+                               "objects-to-be-rendered"))
+            except KeyError:
+                logging.debug("Metric is not set to be displayed as a chart. Note that no other format is supported. Doing nothing")
+
+    def generate(self):
+        """
+        Triggers the report rendering.
+        """
+        self.renderer.render()
