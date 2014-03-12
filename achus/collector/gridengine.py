@@ -91,13 +91,12 @@ class GECollector(base.Collector):
         Organizes data (summing) by the infrastructure type.
         """
         d = {}
-        try:
-            self.GROUPS_TO_INFRASTRUCTURE[group]
-        except KeyError:
-            raise ConnectorException(("Could not find INFRASTRUCTURE for "
-                                      "group '%s'" % group))
-
         for group, value in data.iteritems():
+            try:
+                self.GROUPS_TO_INFRASTRUCTURE[group]
+            except KeyError:
+                raise achus.exception.ConnectorException(("Could not find INFRASTRUCTURE for "
+                                          "group '%s'" % group))
             try:
                 d[self.GROUPS_TO_INFRASTRUCTURE[group]] += value
             except KeyError:
