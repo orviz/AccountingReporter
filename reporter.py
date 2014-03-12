@@ -172,7 +172,10 @@ class GEConnector(Connector):
             d["group_by"] = "ge_group"
             d["conditions"] = {}
             for k,v in kw.iteritems():
-                d["conditions"].update({ self.FIELD_MAPPING[k]: v })
+                try:                                                                                 
+                    d["conditions"].update({ self.FIELD_MAPPING[k]: v })
+                except KeyError:
+                    logging.debug("Field '%s' not being considered" % k)       
             logging.debug("Resultant keyword arguments: %s" % d)
             logging.debug("Calling decorated function '%s'" % func.func_name)
             output = func(self, *args, **d)
