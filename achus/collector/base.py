@@ -1,4 +1,4 @@
-class Collector:
+class Collector(object):
     # FIXME this method should not be inside any connector class
     def _to_hours(self, seconds):
         return round((float(seconds) / 3600), 2)

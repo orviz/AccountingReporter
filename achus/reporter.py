@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
-class Report:
+class Report(object):
     """
     Main class, triggers reports based on the input given.
     """

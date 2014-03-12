@@ -1,7 +1,7 @@
 import pygal
 
 
-class Chart:
+class Chart(object):
     """
     Generates charts using PyGal.
     """
