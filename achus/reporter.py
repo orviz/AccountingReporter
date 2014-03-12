@@ -1,126 +1,23 @@
 #!/usr/bin/env python
 
 import logging
-import pygal
 import sys
-import cairosvg
-
-from pyPdf import PdfFileWriter, PdfFileReader
-from tempfile import NamedTemporaryFile
 
 import achus.exception
 import achus.collector.gridengine
+import achus.renderer.chart
+import achus.renderer.pdf
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-
-##################
-## -- Charts -- ##
-##################
-
-class Chart:
-    """
-    Generates charts using PyGal.
-    """
-    def __init__(self, d, title='', type="pie", filename=None):
-        """
-        Expects a dictionary with k,v pairs to be plotted.
-
-        If filename is defined, it assumes that the chart has to
-        renderized in this file.
-        """
-        self.d = d
-        self.title = title
-        self.type = type
-        self.filename = filename
-
-    def render(self):
-        """
-        Renders to a pygal's chart.
-        """
-        chart_types = {
-            "pie": pygal.Pie(),
-            "horizontal_bar": pygal.HorizontalBar()
-        }
-        chart = chart_types[self.type]
-        chart.title = self.title
-        for k,v in self.d.iteritems():
-            chart.add(k,v)
-        if self.filename:
-            chart.render_to_file(filename=self.filename)
-        else:
-            chart.render()
-
-#####################
-## -- Renderers -- ##
-#####################
-
-class PDFRenderer:
-    """
-    Generates a report with the chart content.
-    """
-    def __init__(self, filename, objs=[], **kw):
-        """
-        A PDF report is comprised of several objects. These objects
-        must have a render() method.
-            filename: name of the PDF file.
-            objs: objects to be renderized in the document.
-        """
-        self.filename = filename
-        self.objs = objs
-        self.pdf_list = []
-
-    def append(self, obj):
-        """
-        Appends an object to the report.
-        """
-        self.objs.append(obj)
-
-    def render(self):
-        """
-        Generates the PDF report by:
-            1) Calling object's render() method (creates SVG file).
-            2) Transforms SVG content to PDF content.
-            3) Merges the resultant PDF files into the final report.
-        """
-        for obj in self.objs:
-            # Temporary SVG
-            chart_svg_file = NamedTemporaryFile()
-            obj.filename = chart_svg_file.name
-            obj.render()
-            logger.debug(("'%s' graph has been generated as SVG under"
-                          "'%s'"
-                          % (obj.title, obj.filename)))
-            # Temporary PDF
-            chart_pdf_file = NamedTemporaryFile()
-            chart_pdf_file.write(cairosvg.svg2pdf(url=obj.filename))
-            logger.debug(("'%s' graph has been generated as PDF under"
-                          "'%s'"
-                          % (obj.title, chart_pdf_file.name)))
-            self.pdf_list.append(chart_pdf_file)
-            chart_svg_file.close()
-        # PDF
-        output = PdfFileWriter()
-        for pdf in self.pdf_list:
-            input1 = PdfFileReader(pdf)
-            output.addPage(input1.getPage(0))
-        outputStream = file(self.filename, "wb")
-        output.write(outputStream)
-        outputStream.close()
-        logger.debug("Result PDF created under '%s'" % self.filename)
-
-
-######################
-## -- Main Class -- ##
-######################
 
 class Report:
     """
     Main class, triggers reports based on the input given.
     """
     RENDERERS = {
-        "pdf": PDFRenderer,
+        "pdf": achus.renderer.pdf.PDFRenderer,
     }
     CONNECTORS = {
         "ge": achus.collector.gridengine.GECollector('localhost', 'root', '******', 'ge_accounting'),
@@ -166,7 +63,7 @@ class Report:
             logging.debug("Result from connector: '%s'" % d)
 
             try:
-                chart = Chart(d, title, type=conf["chart"])
+                chart = achus.renderer.chart.Chart(d, title, type=conf["chart"])
                 logging.debug("Metric will be displayed as a chart, type <%s>"
                               % conf["chart"])
                 self.renderer.append(chart)
