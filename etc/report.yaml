@@ -2,7 +2,7 @@
 
 report:
     "CPU usage per GROUP (in seconds)":
-        connector: ge
+        collector: ge
         metric: cpu
         group_by: group
         chart": pie
@@ -10,7 +10,7 @@ report:
         end_time: "2013-02-01 00:00"
 
     "Efficiency per GROUP":
-        connector: ge
+        collector: ge
         metric: efficiency
         group_by: group
         chart: horizontal_bar

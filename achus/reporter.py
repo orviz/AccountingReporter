@@ -31,7 +31,7 @@ class Report(object):
     RENDERERS = {
         "pdf": achus.renderer.pdf.PDFRenderer,
     }
-    CONNECTORS = {
+    COLLECTORS = {
         "ge": achus.collector.gridengine.GECollector()
     }
 
@@ -51,18 +51,18 @@ class Report(object):
         with open(CONF.report_definition, "rb") as f:
             return yaml.safe_load(f)["report"]
 
-    def _get_connector_kwargs(self, d):
+    def _get_collector_kwargs(self, d):
         """
         Fills the keyword argumnents that will be passed to the
-        connector method.
+        collector method.
         """
-        CONNECTOR_KWARGS = [
+        COLLECTOR_KWARGS = [
             # GEConnector
             "group_by", "start_time", "end_time",
         ]
         d_kwargs = {}
         for k in d.keys():
-            if k in CONNECTOR_KWARGS:
+            if k in COLLECTOR_KWARGS:
                 d_kwargs[k] = d[k]
         return d_kwargs
 
@@ -90,7 +90,7 @@ class Report(object):
         for title, conf in self.report.iteritems():
             logging.info("Gathering data from metric '%s'" % title)
 
-            self.conn = self.CONNECTORS[conf["connector"]]
+            self.conn = self.COLLECTORS[conf["collector"]]
             logging.debug("(Connector: %s, Metric: %s)"
                           % (conf["connector"], conf["metric"]))
 
@@ -105,8 +105,8 @@ class Report(object):
                     break
             # connector call
             d = self.conn.get(conf["metric"],
-                              **self._get_connector_kwargs(conf))
-            logging.debug("Result from connector: '%s'" % d)
+                              **self._get_collector_kwargs(conf))
+            logging.debug("Result from collector: '%s'" % d)
 
             if metagroup:
                 d = self._group_by_metagroup(d, metagroup)
