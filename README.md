@@ -41,13 +41,34 @@ Generate PDF reports.
 import achus.reporter
 import achus.collector
 
+# FIXME this should be moved to a/the configuration file.
+metagroups = {
+    "grid": ["biomed", 
+             "ibertut",
+             "iberops",
+             "iberchem",
+             "auger",
+             "cmsprd",
+             "iberphys",
+             "ops",
+             "fusion",
+             "dteam",
+             "iberearth",
+             "ilc",
+             "iberlife"
+    ],
+    "local": ["hidra"
+              "astro",
+              "lqcd",
+    ],
+
 report = achus.reporter.Report(
     "pdf",
     {
         "CPU usage per GROUP (in seconds)": {
             "connector": "ge",
             "metric": "cpu",
-            "group_by": "group",
+            "group_by": ["grid", "local"],
             "chart": "pie",
             "start_time": "2013-01-01 00:00",
             "end_time": "2013-02-01 00:00",
@@ -59,6 +80,7 @@ report = achus.reporter.Report(
             "chart": "horizontal_bar",
         },
     },
+    metagroups,
     **{
         "filename": "/tmp/report.pdf",
     }

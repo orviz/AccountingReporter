@@ -23,7 +23,8 @@ class Report:
                                                      'ge_accounting'),
     }
 
-    def __init__(self, renderer, task, **kw):
+    #FIXME 'metagroups' must be obtained from an generic config file 
+    def __init__(self, renderer, task, metagroups, **kw):
         """
         renderer: type of report (supported: RENDERERS.keys())
         task: dictionary with the metrics to be gathered.
@@ -33,6 +34,7 @@ class Report:
                       % (task, kw))
         self.renderer = self.RENDERERS[renderer](**kw)
         self.task = task
+        self.metagroups = metagroups
 
     def _get_connector_kwargs(self, d):
         """
@@ -49,6 +51,23 @@ class Report:
                 d_kwargs[k] = d[k]
         return d_kwargs
 
+    def _group_by_metagroup(self, data, metagroup_list):
+        """
+        Organizes data (summing) by the infrastructure type.
+        GROUP_FUNCS = {
+            "infrastructure": self._group_by_infrastructure,
+        }
+        """
+        d = {}
+        for k,v in data.iteritems():
+            for metagroup in metagroup_list:
+                if k in self.metagroups[metagroup]:
+                    try:
+                        d[metagroup] += v
+                    except KeyError:
+                        d[metagroup] = v
+        return d
+
     def collect(self):
         """
         Gathers metric data.
@@ -59,9 +78,25 @@ class Report:
             self.conn = self.CONNECTORS[conf["connector"]]
             logging.debug("(Connector: %s, Metric: %s)"
                           % (conf["connector"], conf["metric"]))
+
+            # metagroup
+            metagroup = False
+            for group in conf["group_by"]:
+                if group in self.metagroups.keys():
+                    metagroup = conf.pop("group_by")
+                    logging.debug(("Metagroup/s '%s' requested. Not passing "
+                                   "'group_by' key to the connector"
+                                   % metagroup))
+                    break
+            # connector call
             d = self.conn.get(conf["metric"],
                               **self._get_connector_kwargs(conf))
             logging.debug("Result from connector: '%s'" % d)
+
+            if metagroup:
+                d = self._group_by_metagroup(d, metagroup)
+                logging.debug("Ordered by metagroup/s '%s': %s" 
+                              % (metagroup, d))
 
             try:
                 chart = achus.renderer.chart.Chart(d,

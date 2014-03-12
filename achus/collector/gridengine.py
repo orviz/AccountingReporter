@@ -21,14 +21,6 @@ class GECollector(base.Collector):
                        "ge_slots FROM ge_jobs"),
     }
 
-    GROUPS_TO_INFRASTRUCTURE = {
-        "astro": "local",
-        "biomed": "grid",
-        "cms": "grid",
-        "dteam": "grid",
-        "hidra": "local",
-    }
-
     DEFAULT_CONDITIONS = [
         "ge_slots>=1",
         "ge_ru_wallclock>=0",
@@ -86,36 +78,6 @@ class GECollector(base.Collector):
         return " ".join(["%s WHERE", " AND ".join(condition_list),
                          "GROUP BY %s"]) % args
 
-    def _group_by_infrastructure(self, data):
-        """
-        Organizes data (summing) by the infrastructure type.
-        """
-        d = {}
-        for group, value in data.iteritems():
-            try:
-                self.GROUPS_TO_INFRASTRUCTURE[group]
-            except KeyError:
-                raise achus.exception.ConnectorException(("Could not find INFRASTRUCTURE for "
-                                          "group '%s'" % group))
-            try:
-                d[self.GROUPS_TO_INFRASTRUCTURE[group]] += value
-            except KeyError:
-                d[self.GROUPS_TO_INFRASTRUCTURE[group]] = value
-
-        return d
-
-    def _group_by(self, d, group_by="group"):
-        """
-        Organizes the data according to the given group.
-        """
-        GROUP_FUNCS = {
-            "infrastructure": self._group_by_infrastructure,
-        }
-        try:
-            return GROUP_FUNCS[group_by](d)
-        except KeyError:
-            return d
-
     def query(self, parameter, group_by="ge_group", conditions=None):
         """
         Performs a SQL query based on the parameter requested.
@@ -149,9 +111,6 @@ class GECollector(base.Collector):
             post_grouping = "group"
             try:
                 d["group_by"] = kw.pop("group_by")
-                # special cases
-                if d["group_by"] == "infrastructure":
-                    post_grouping = d["group_by"]
             except KeyError:
                 pass
             d["group_by"] = "ge_group"
@@ -164,8 +123,7 @@ class GECollector(base.Collector):
             logging.debug("Resultant keyword arguments: %s" % d)
             logging.debug("Calling decorated function '%s'" % func.func_name)
             output = func(self, *args, **d)
-            logging.debug("Post-Grouping results by '%s'" % post_grouping)
-            return self._group_by(output, post_grouping)
+            return output
         return _group
 
     @group
