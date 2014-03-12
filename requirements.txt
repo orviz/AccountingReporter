@@ -4,5 +4,6 @@ MySQL-python
 pyPdf
 pygal
 tinycss
+PyYAML
 
 oslo.config

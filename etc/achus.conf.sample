@@ -1,5 +1,16 @@
 [DEFAULT]
 
+#
+# Options defined in achus.reporter
+#
+
+# Report definition location. (string value)
+#report_definition=etc/report.yaml
+
+# Report output file. (string value)
+#report_output=report.pdf
+
+
 [gecollector]
 
 #

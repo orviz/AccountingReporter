@@ -1,5 +1,8 @@
 import logging
 
+from oslo.config import cfg
+import yaml
+
 import achus.exception
 import achus.collector.gridengine
 import achus.renderer.chart
@@ -7,6 +10,18 @@ import achus.renderer.pdf
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+opts = [
+    cfg.StrOpt('report_definition',
+               default='etc/report.yaml',
+               help='Report definition location.'),
+    cfg.StrOpt('report_output',
+               default='report.pdf',
+               help='Report output file.'),
+]
+
+CONF = cfg.CONF
+CONF.register_opts(opts)
 
 
 class Report(object):
@@ -20,18 +35,21 @@ class Report(object):
         "ge": achus.collector.gridengine.GECollector()
     }
 
-    #FIXME 'metagroups' must be obtained from an generic config file 
-    def __init__(self, renderer, task, metagroups, **kw):
+    #FIXME 'metagroups' must be obtained from an generic config file
+    def __init__(self, renderer, metagroups):
         """
         renderer: type of report (supported: RENDERERS.keys())
-        task: dictionary with the metrics to be gathered.
         """
         logging.debug("New report requested (TYPE <%s>)" % renderer)
-        logging.debug("TASKs: %s ; KEYWORD ARGUMENTS: %s"
-                      % (task, kw))
-        self.renderer = self.RENDERERS[renderer](**kw)
-        self.task = task
         self.metagroups = metagroups
+        self.renderer = self.RENDERERS[renderer](CONF.report_output)
+        self.report = self._report_from_yaml(CONF.report_definition)
+        print self.report
+
+    def _report_from_yaml(self, report_file):
+        # FIXME(aloga): We must catch exceptions here
+        with open(CONF.report_definition, "rb") as f:
+            return yaml.safe_load(f)["report"]
 
     def _get_connector_kwargs(self, d):
         """
@@ -69,7 +87,7 @@ class Report(object):
         """
         Gathers metric data.
         """
-        for title, conf in self.task.iteritems():
+        for title, conf in self.report.iteritems():
             logging.info("Gathering data from metric '%s'" % title)
 
             self.conn = self.CONNECTORS[conf["connector"]]
@@ -92,7 +110,7 @@ class Report(object):
 
             if metagroup:
                 d = self._group_by_metagroup(d, metagroup)
-                logging.debug("Ordered by metagroup/s '%s': %s" 
+                logging.debug("Ordered by metagroup/s '%s': %s"
                               % (metagroup, d))
 
             try:
