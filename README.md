@@ -38,9 +38,10 @@ Generate PDF reports.
 
 # Usage
 ```python
-from reporter import Report
+import achus.reporter
+import achus.collector
 
-report = Report(
+report = achus.reporter.Report(
     "pdf",
     {
         "CPU usage per GROUP (in seconds)": {
@@ -57,17 +58,15 @@ report = Report(
             "group_by": "group",
             "chart": "horizontal_bar",
         },
-        "CPU usage per INFRASTRUCTURE (in seconds)": {
-            "connector": "ge",
-            "metric": "cpu",
-            "group_by": "infrastructure",
-            "chart": "pie",
-        },
     },
     **{
         "filename": "/tmp/report.pdf",
     }
 )
+report.CONNECTORS["ge"] = achus.collector.gridengine.GECollector(<dbserver>,
+                                                                 <dbuser>,
+                                                                 <dbpasswd>,
+                                                                 'ge_accounting')
 report.collect()
 report.generate()
 ```
