@@ -1,0 +1,6 @@
+cairosvg
+cssselect
+MySQL-python
+pyPdf
+pygal
+tinycss
