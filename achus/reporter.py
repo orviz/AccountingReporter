@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import logging
-import sys
 
 import achus.exception
 import achus.collector.gridengine
@@ -20,7 +19,10 @@ class Report:
         "pdf": achus.renderer.pdf.PDFRenderer,
     }
     CONNECTORS = {
-        "ge": achus.collector.gridengine.GECollector('localhost', 'root', '******', 'ge_accounting'),
+        "ge": achus.collector.gridengine.GECollector('localhost',
+                                                     'root',
+                                                     '******',
+                                                     'ge_accounting'),
     }
 
     def __init__(self, renderer, task, **kw):
@@ -32,7 +34,7 @@ class Report:
         logging.debug("TASKs: %s ; KEYWORD ARGUMENTS: %s"
                       % (task, kw))
         self.renderer = self.RENDERERS[renderer](**kw)
-        self.task     = task
+        self.task = task
 
     def _get_connector_kwargs(self, d):
         """
@@ -59,18 +61,23 @@ class Report:
             self.conn = self.CONNECTORS[conf["connector"]]
             logging.debug("(Connector: %s, Metric: %s)"
                           % (conf["connector"], conf["metric"]))
-            d = self.conn.get(conf["metric"], **self._get_connector_kwargs(conf))
+            d = self.conn.get(conf["metric"],
+                              **self._get_connector_kwargs(conf))
             logging.debug("Result from connector: '%s'" % d)
 
             try:
-                chart = achus.renderer.chart.Chart(d, title, type=conf["chart"])
+                chart = achus.renderer.chart.Chart(d,
+                                                   title,
+                                                   type=conf["chart"])
                 logging.debug("Metric will be displayed as a chart, type <%s>"
                               % conf["chart"])
                 self.renderer.append(chart)
                 logging.debug(("Chart appended to report's list of "
                                "objects-to-be-rendered"))
             except KeyError:
-                logging.debug("Metric is not set to be displayed as a chart. Note that no other format is supported. Doing nothing")
+                logging.debug("Metric is not set to be displayed as "
+                              "a chart. Note that no other format is "
+                              "supported. Doing nothing.")
 
     def generate(self):
         """

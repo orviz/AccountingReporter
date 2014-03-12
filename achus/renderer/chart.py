@@ -1,5 +1,6 @@
 import pygal
 
+
 class Chart:
     """
     Generates charts using PyGal.
@@ -26,8 +27,8 @@ class Chart:
         }
         chart = chart_types[self.type]
         chart.title = self.title
-        for k,v in self.d.iteritems():
-            chart.add(k,v)
+        for k, v in self.d.iteritems():
+            chart.add(k, v)
         if self.filename:
             chart.render_to_file(filename=self.filename)
         else:
