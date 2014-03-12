@@ -114,8 +114,14 @@ class GEConnector(Connector):
         """
         Organizes data (summing) by the infrastructure type.
         """
+        #print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", data
         d = {}
         for group, value in data.iteritems():
+            try:
+                self.GROUPS_TO_INFRASTRUCTURE[group]
+            except KeyError:
+                raise ConnectorException(("Could not find INFRASTRUCTURE for "
+                                          "group '%s'" % group))
             try:
                 d[self.GROUPS_TO_INFRASTRUCTURE[group]] += value
             except KeyError:
@@ -180,7 +186,7 @@ class GEConnector(Connector):
             logging.debug("Calling decorated function '%s'" % func.func_name)
             output = func(self, *args, **d)
             logging.debug("Post-Grouping results by '%s'" % post_grouping)
-            return self._group_by(output, post_grouping)
+            return self._group_by(output, group_by=post_grouping)
         return _group
 
     @group
@@ -343,7 +349,8 @@ class Report:
         "pdf": PDFRenderer,
     }
     CONNECTORS = {
-        "ge": GEConnector('localhost', 'root', '******', 'ge_accounting'),
+        #"ge": GEConnector('localhost', 'root', '******', 'ge_accounting'),
+        "ge": GEConnector('monitor', 'ge_accounting', 'ifca1378accounting', 'ge_accounting'),
     }
 
     def __init__(self, renderer, task, **kw):
