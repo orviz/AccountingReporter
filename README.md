@@ -46,13 +46,15 @@ report = Report(
         "CPU usage per GROUP (in seconds)": {
             "connector": "ge",
             "metric": "cpu",
-            "group_by": "ge_group",
+            "group_by": "group",
             "chart": "pie",
+            "start_time": "2013-01-01 00:00",
+            "end_time": "2013-02-01 00:00",
         },
         "Efficiency per GROUP": {
             "connector": "ge",
             "metric": "efficiency",
-            "group_by": "ge_group",
+            "group_by": "group",
             "chart": "horizontal_bar",
         },
         "CPU usage per INFRASTRUCTURE (in seconds)": {
