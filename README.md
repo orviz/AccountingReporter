@@ -61,6 +61,7 @@ metagroups = {
               "astro",
               "lqcd",
     ],
+}
 
 report = achus.reporter.Report(
     "pdf",
