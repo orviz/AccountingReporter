@@ -3,12 +3,34 @@ from functools import wraps
 import logging
 
 import MySQLdb as mdb
+from oslo.config import cfg
 
 from achus.collector import base
 import achus.exception
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+opts = [
+    cfg.StrOpt('host',
+               default='localhost',
+               help='MySQL host where GE accounting database is located.'),
+    cfg.IntOpt('port',
+               default=3306,
+               help='Port number of MySQL host.'),
+    cfg.StrOpt('user',
+               default='ge_accounting',
+               help='User to authenticate as.'),
+    cfg.StrOpt('password',
+               default='',
+               help='Password to authenticate with.'),
+    cfg.StrOpt('dbname',
+               default='ge_accounting',
+               help='Name of the accounting database.'),
+]
+
+CONF = cfg.CONF
+CONF.register_opts(opts, group="gecollector")
 
 
 class GECollector(base.Collector):
@@ -32,12 +54,6 @@ class GECollector(base.Collector):
         "start_time": "ge_start_time",
         "end_time": "ge_end_time",
     }
-
-    def __init__(self, dbserver, dbuser, dbpasswd, dbname):
-        self.dbserver = dbserver
-        self.dbuser = dbuser
-        self.dbpasswd = dbpasswd
-        self.dbname = dbname
 
     def _format_value(self, *args):
         """
@@ -82,10 +98,11 @@ class GECollector(base.Collector):
         """
         Performs a SQL query based on the parameter requested.
         """
-        conn = mdb.connect(self.dbserver,
-                           self.dbuser,
-                           self.dbpasswd,
-                           self.dbname)
+        conn = mdb.connect(CONF.gecollector.host,
+                           CONF.gecollector.user,
+                           CONF.gecollector.password,
+                           CONF.gecollector.dbname,
+                           CONF.gecollector.port)
 
         with contextlib.closing(conn):
             curs = conn.cursor()

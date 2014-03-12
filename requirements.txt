@@ -4,3 +4,5 @@ MySQL-python
 pyPdf
 pygal
 tinycss
+
+oslo.config

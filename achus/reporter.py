@@ -17,10 +17,7 @@ class Report(object):
         "pdf": achus.renderer.pdf.PDFRenderer,
     }
     CONNECTORS = {
-        "ge": achus.collector.gridengine.GECollector('localhost',
-                                                     'root',
-                                                     '******',
-                                                     'ge_accounting'),
+        "ge": achus.collector.gridengine.GECollector()
     }
 
     #FIXME 'metagroups' must be obtained from an generic config file 

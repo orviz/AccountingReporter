@@ -1,0 +1,25 @@
+[DEFAULT]
+
+[gecollector]
+
+#
+# Options defined in achus.collector.gridengine
+#
+
+# MySQL host where GE accounting database is located. (string
+# value)
+#host=localhost
+
+# Port number of MySQL host. (integer value)
+#port=3306
+
+# User to authenticate as. (string value)
+#user=ge_accounting
+
+# Password to authenticate with. (string value)
+#password=
+
+# Name of the accounting database. (string value)
+#dbname=ge_accounting
+
+
