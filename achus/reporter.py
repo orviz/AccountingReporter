@@ -35,21 +35,26 @@ class Report(object):
         "ge": achus.collector.gridengine.GECollector()
     }
 
-    #FIXME 'metagroups' must be obtained from an generic config file
-    def __init__(self, renderer, metagroups):
+    def __init__(self, renderer):
         """
-        renderer: type of report (supported: RENDERERS.keys())
+        renderer: type of report.
         """
         logging.debug("New report requested (TYPE <%s>)" % renderer)
-        self.metagroups = metagroups
         self.renderer = self.RENDERERS[renderer](CONF.report_output)
-        self.report = self._report_from_yaml(CONF.report_definition)
-        print self.report
+
+        report = self._report_from_yaml(CONF.report_definition)
+        logging.debug("Loaded '%s' with content: %s"
+                      % (CONF.report_definition, report))
+        self.metric = report["metric"]
+        try:
+            self.metagroup = report["metagroup"]
+        except KeyError:
+            self.metagroup = {}
 
     def _report_from_yaml(self, report_file):
         # FIXME(aloga): We must catch exceptions here
         with open(CONF.report_definition, "rb") as f:
-            return yaml.safe_load(f)["report"]
+            return yaml.safe_load(f)
 
     def _get_collector_kwargs(self, d):
         """
@@ -57,7 +62,7 @@ class Report(object):
         collector method.
         """
         COLLECTOR_KWARGS = [
-            # GEConnector
+            # GECollector
             "group_by", "start_time", "end_time",
         ]
         d_kwargs = {}
@@ -75,43 +80,46 @@ class Report(object):
         """
         d = {}
         for k,v in data.iteritems():
-            for metagroup in metagroup_list:
-                if k in self.metagroups[metagroup]:
+            for mg in metagroup_list:
+                if k in self.metagroup[mg]:
                     try:
-                        d[metagroup] += v
+                        d[mg] += v
                     except KeyError:
-                        d[metagroup] = v
+                        d[mg] = v
         return d
 
     def collect(self):
         """
         Gathers metric data.
         """
-        for title, conf in self.report.iteritems():
+        for title, conf in self.metric.iteritems():
             logging.info("Gathering data from metric '%s'" % title)
 
             self.conn = self.COLLECTORS[conf["collector"]]
-            logging.debug("(Connector: %s, Metric: %s)"
-                          % (conf["connector"], conf["metric"]))
+            logging.debug("(Collector: %s, Metric: %s)"
+                          % (conf["collector"], conf["metric"]))
 
-            # metagroup
-            metagroup = False
-            for group in conf["group_by"]:
-                if group in self.metagroups.keys():
-                    metagroup = conf.pop("group_by")
-                    logging.debug(("Metagroup/s '%s' requested. Not passing "
-                                   "'group_by' key to the connector"
-                                   % metagroup))
-                    break
-            # connector call
-            d = self.conn.get(conf["metric"],
-                              **self._get_collector_kwargs(conf))
+            # Metagroup check
+            metagroup_list = []
+            for mg in conf["group_by"]:
+                if mg in self.metagroup.keys():
+                    metagroup_list.append(mg)
+            if metagroup_list:
+                logging.info("Metagroup/s '%s' requested" % metagroup_list)
+                conf["group_by"] = list(
+                        set(conf["group_by"]).difference(metagroup_list))
+
+            # Collector call
+            kwargs = self._get_collector_kwargs(conf)
+            logging.debug("Passing kwargs to the collector: %s"
+                          % kwargs)
+            d = self.conn.get(conf["metric"], **kwargs)
             logging.debug("Result from collector: '%s'" % d)
 
-            if metagroup:
-                d = self._group_by_metagroup(d, metagroup)
+            if metagroup_list:
+                d = self._group_by_metagroup(d, metagroup_list)
                 logging.debug("Ordered by metagroup/s '%s': %s"
-                              % (metagroup, d))
+                              % (metagroup_list, d))
 
             try:
                 chart = achus.renderer.chart.Chart(d,

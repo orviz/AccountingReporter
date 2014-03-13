@@ -1,11 +1,33 @@
 ---
 
-report:
+metagroup:
+    grid:
+        - biomed 
+        - iberops
+        - iberchem
+        - auger
+        - cmsprd
+        - iberphys
+        - iber
+        - ops
+        - fusion
+        - dteam
+        - iberearth
+        - ilc
+        - iberlife
+    local:
+        - hidra
+        - astro
+        - lqcd
+
+metric:
     "CPU usage per GROUP (in seconds)":
         collector: ge
         metric: cpu
-        group_by: group
-        chart": pie
+        group_by:
+            - grid
+            - local
+        chart: pie
         start_time: "2013-01-01 00:00"
         end_time: "2013-02-01 00:00"
 
