@@ -3,8 +3,8 @@ import logging
 from oslo.config import cfg
 import yaml
 
-import achus.collector.gridengine
-import achus.exception
+from achus import collector
+from achus import exception
 import achus.renderer
 import achus.renderer.chart
 import achus.renderer.pdf
@@ -26,18 +26,20 @@ class Report(object):
     """
     Main class, triggers reports based on the input given.
     """
-    COLLECTORS = {
-        "ge": achus.collector.gridengine.GECollector()
-    }
 
     def __init__(self):
         """
         renderer: type of report.
         """
+
+        self.collector_handler = collector.CollectorHandler()
+        self.available_collectors = self.collector_handler.get_all_classes()
+
         self.renderer = achus.renderer.Renderer()
+
         report = self._report_from_yaml(CONF.report_definition)
         logger.debug("Loaded '%s' with content: %s"
-                      % (CONF.report_definition, report))
+                     % (CONF.report_definition, report))
         self.metric = report["metric"]
         self.aggregate = report["aggregate"]
 
@@ -61,24 +63,48 @@ class Report(object):
                 d_kwargs[k] = d[k]
         return d_kwargs
 
+
+    def _get_collectors(self):
+        collectors = [i.get("collector") for _, i in self.metric.items()]
+
+        cls_map = dict((cls.__name__, cls) for cls in
+                       self.available_collectors)
+        good_collectors = {}
+        bad_collectors = []
+        for name in collectors:
+            if name not in cls_map:
+                bad_collectors.append(name)
+                continue
+            good_collectors[name] = cls_map[name]
+
+        if bad_collectors:
+            msg = ", ".join(bad_collectors)
+            raise exception.CollectorNotFound(msg)
+
+        return good_collectors
+
     def collect(self):
         """
         Gathers metric data.
         """
+        collectors = self._get_collectors()
         for title, conf in self.metric.iteritems():
             logger.info("Gathering data from metric '%s'" % title)
 
-            self.conn = self.COLLECTORS[conf["collector"]]
+            collector_name = conf["collector"]
+            metric_name = conf["metric"]
+
+            self.conn = collectors[collector_name]()
             logger.debug("(Collector: %s, Metric: %s)"
-                          % (conf["collector"], conf["metric"]))
+                         % (collector_name, metric_name))
 
             try:
-                group_by_list = self.aggregate[conf["aggregate"]].keys() or [] 
+                group_by_list = self.aggregate[conf["aggregate"]].keys() or []
                 logger.debug("Aggregate's group_by parameters: %s" % group_by_list)
-                # FIXME (orviz) multiple group_by in an aggregate definition 
+                # FIXME (orviz) multiple group_by in an aggregate definition
                 # must be supported
                 if len(group_by_list) != 1:
-                    raise achus.exception.AggregateException(("You must one and only" 
+                    raise achus.exception.AggregateException(("You must one and only"
                         "one 'group_by' (project, group) parameter"))
             # FIXME (orviz) same here but in the metric definition
             except TypeError:
@@ -89,7 +115,7 @@ class Report(object):
                             "'%s' aggregate definition" % conf["aggregate"]))
 
             for group_by in group_by_list:
-                # Add group_by to the condition list 
+                # Add group_by to the condition list
                 conf.update({ group_by: self.aggregate[conf["aggregate"]][group_by] })
                 kwargs = self._get_collector_kwargs(conf)
                 logger.debug("Passing kwargs to the collector: %s"
