@@ -58,7 +58,7 @@ class PDFChart(achus.renderer.base.Renderer):
         output = self._generate_pdf()
         output_stream = StringIO.StringIO()
         output.write(output_stream)
-        yield output_stream.read()
+        yield output_stream.getvalue()
 
     def render_to_file(self, filename=CONF.renderer.output_file):
         """Write the PDF report into filename"""
