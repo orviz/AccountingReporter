@@ -39,18 +39,18 @@ Generate PDF reports.
 # Installation
 
 
-{{{
+```
     cd achus
     pip install .
-}}}
+```
 
 # Usage
 
 ## From the CLI
 
-{{{
+```
     achus-report --config-file=config.conf
-}}}
+```
 
 ## Programatically
 
