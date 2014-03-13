@@ -39,11 +39,11 @@ class Report(object):
         """
         renderer: type of report.
         """
-        logging.debug("New report requested (TYPE <%s>)" % renderer)
+        logger.debug("New report requested (TYPE <%s>)" % renderer)
         self.renderer = self.RENDERERS[renderer](CONF.report_output)
 
         report = self._report_from_yaml(CONF.report_definition)
-        logging.debug("Loaded '%s' with content: %s"
+        logger.debug("Loaded '%s' with content: %s"
                       % (CONF.report_definition, report))
         self.metric = report["metric"]
         try:
@@ -93,10 +93,10 @@ class Report(object):
         Gathers metric data.
         """
         for title, conf in self.metric.iteritems():
-            logging.info("Gathering data from metric '%s'" % title)
+            logger.info("Gathering data from metric '%s'" % title)
 
             self.conn = self.COLLECTORS[conf["collector"]]
-            logging.debug("(Collector: %s, Metric: %s)"
+            logger.debug("(Collector: %s, Metric: %s)"
                           % (conf["collector"], conf["metric"]))
 
             # Metagroup check
@@ -105,33 +105,33 @@ class Report(object):
                 if mg in self.metagroup.keys():
                     metagroup_list.append(mg)
             if metagroup_list:
-                logging.info("Metagroup/s '%s' requested" % metagroup_list)
+                logger.info("Metagroup/s '%s' requested" % metagroup_list)
                 conf["group_by"] = list(
                         set(conf["group_by"]).difference(metagroup_list))
 
             # Collector call
             kwargs = self._get_collector_kwargs(conf)
-            logging.debug("Passing kwargs to the collector: %s"
+            logger.debug("Passing kwargs to the collector: %s"
                           % kwargs)
             d = self.conn.get(conf["metric"], **kwargs)
-            logging.debug("Result from collector: '%s'" % d)
+            logger.debug("Result from collector: '%s'" % d)
 
             if metagroup_list:
                 d = self._group_by_metagroup(d, metagroup_list)
-                logging.debug("Ordered by metagroup/s '%s': %s"
+                logger.debug("Ordered by metagroup/s '%s': %s"
                               % (metagroup_list, d))
 
             try:
                 chart = achus.renderer.chart.Chart(d,
                                                    title,
                                                    type=conf["chart"])
-                logging.debug("Metric will be displayed as a chart, type <%s>"
+                logger.debug("Metric will be displayed as a chart, type <%s>"
                               % conf["chart"])
                 self.renderer.append(chart)
-                logging.debug(("Chart appended to report's list of "
+                logger.debug(("Chart appended to report's list of "
                                "objects-to-be-rendered"))
             except KeyError:
-                logging.debug("Metric is not set to be displayed as "
+                logger.debug("Metric is not set to be displayed as "
                               "a chart. Note that no other format is "
                               "supported. Doing nothing.")
 

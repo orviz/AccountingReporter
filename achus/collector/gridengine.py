@@ -123,7 +123,7 @@ class GECollector(base.Collector):
         """
         @wraps(func)
         def _group(self, *args, **kw):
-            logging.debug("Received keyword arguments: %s" % kw)
+            logger.debug("Received keyword arguments: %s" % kw)
             d = {}
             post_grouping = "group"
             try:
@@ -136,9 +136,9 @@ class GECollector(base.Collector):
                 try:
                     d["conditions"].update({self.FIELD_MAPPING[k]: v})
                 except KeyError:
-                    logging.debug("Field '%s' not being considered" % k)
-            logging.debug("Resultant keyword arguments: %s" % d)
-            logging.debug("Calling decorated function '%s'" % func.func_name)
+                    logger.debug("Field '%s' not being considered" % k)
+            logger.debug("Resultant keyword arguments: %s" % d)
+            logger.debug("Calling decorated function '%s'" % func.func_name)
             output = func(self, *args, **d)
             return output
         return _group
