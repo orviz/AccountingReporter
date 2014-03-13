@@ -1,10 +1,16 @@
 import pygal
 
+from oslo.config import cfg
 
-class Chart(object):
-    """
-    Generates charts using PyGal.
-    """
+import achus.renderer.base
+
+CONF = cfg.CONF
+CONF.import_opt('output_file', 'achus.renderer', group="renderer")
+
+
+class Chart(achus.renderer.base.Renderer):
+    """Generates a chart report using PyGal."""
+
     def __init__(self, d, title='', type="pie", filename=None):
         """
         Expects a dictionary with k,v pairs to be plotted.
@@ -12,24 +18,18 @@ class Chart(object):
         If filename is defined, it assumes that the chart has to
         renderized in this file.
         """
-        self.d = d
-        self.title = title
-        self.type = type
-        self.filename = filename
-
-    def render(self):
-        """
-        Renders to a pygal's chart.
-        """
         chart_types = {
             "pie": pygal.Pie(),
             "horizontal_bar": pygal.HorizontalBar()
         }
-        chart = chart_types[self.type]
-        chart.title = self.title
-        for k, v in self.d.iteritems():
-            chart.add(k, v)
-        if self.filename:
-            chart.render_to_file(filename=self.filename)
-        else:
-            chart.render()
+        self.chart = chart_types[type]
+        self.chart.title = title
+        for k, v in d.iteritems():
+            self.chart.add(k, v)
+
+    def render(self):
+        """ Renders to a pygal's chart. """
+        return self.chart.render()
+
+    def render_to_file(self, filename=CONF.renderer.output_file):
+        self.chart.render_to_file(filename=filename)

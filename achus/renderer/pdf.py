@@ -4,14 +4,15 @@ import cairosvg
 from pyPdf import PdfFileWriter, PdfFileReader
 from tempfile import NamedTemporaryFile
 
+import achus.renderer.base
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
-class PDFRenderer(object):
-    """
-    Generates a report with the chart content.
-    """
+class PDFChart(achus.renderer.base.Renderer):
+    """ Generates PDF report containing charts."""
+
     def __init__(self, filename, objs=[], **kw):
         """
         A PDF report is comprised of several objects. These objects
