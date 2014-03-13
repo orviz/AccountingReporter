@@ -2,6 +2,7 @@ import pygal
 
 from oslo.config import cfg
 
+from achus import exception
 import achus.renderer.base
 
 CONF = cfg.CONF
@@ -11,7 +12,7 @@ CONF.import_opt('output_file', 'achus.renderer', group="renderer")
 class Chart(achus.renderer.base.Renderer):
     """Generates a chart report using PyGal."""
 
-    def __init__(self, d, title='', type="pie", filename=None):
+    def __init__(self, data, chart_title='', chart_type='pie', filename=None):
         """
         Expects a dictionary with k,v pairs to be plotted.
 
@@ -22,9 +23,15 @@ class Chart(achus.renderer.base.Renderer):
             "pie": pygal.Pie(),
             "horizontal_bar": pygal.HorizontalBar()
         }
-        self.chart = chart_types[type]
-        self.chart.title = title
-        for k, v in d.iteritems():
+
+        if chart_type not in chart_types:
+            raise exception.UnknownChartType('Chart "%s" is unknown' %
+                                             chart_type)
+
+
+        self.chart = chart_types[chart_type]
+        self.chart.title = chart_title
+        for k, v in data.iteritems():
             self.chart.add(k, v)
 
     def render(self):

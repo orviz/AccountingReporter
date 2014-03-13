@@ -7,9 +7,6 @@
 # Report definition location. (string value)
 #report_definition=etc/report.yaml
 
-# Report output file. (string value)
-#report_output=report.pdf
-
 
 [gecollector]
 
@@ -32,5 +29,18 @@
 
 # Name of the accounting database. (string value)
 #dbname=ge_accounting
+
+
+[renderer]
+
+#
+# Options defined in achus.renderer
+#
+
+# The full class name of the renderer to use (string value)
+#renderer_class=achus.renderer.pdf.PDFChart
+
+# Report output file. (string value)
+#output_file=report.pdf
 
 

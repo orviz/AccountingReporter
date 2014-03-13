@@ -3,8 +3,8 @@ import logging
 from oslo.config import cfg
 import yaml
 
-import achus.exception
 import achus.collector.gridengine
+import achus.renderer
 import achus.renderer.chart
 import achus.renderer.pdf
 
@@ -15,9 +15,6 @@ opts = [
     cfg.StrOpt('report_definition',
                default='etc/report.yaml',
                help='Report definition location.'),
-    cfg.StrOpt('report_output',
-               default='report.pdf',
-               help='Report output file.'),
 ]
 
 CONF = cfg.CONF
@@ -28,20 +25,15 @@ class Report(object):
     """
     Main class, triggers reports based on the input given.
     """
-    RENDERERS = {
-        "pdf": achus.renderer.pdf.PDFRenderer,
-    }
     COLLECTORS = {
         "ge": achus.collector.gridengine.GECollector()
     }
 
-    def __init__(self, renderer):
+    def __init__(self):
         """
         renderer: type of report.
         """
-        logger.debug("New report requested (TYPE <%s>)" % renderer)
-        self.renderer = self.RENDERERS[renderer](CONF.report_output)
-
+        self.renderer = achus.renderer.Renderer()
         report = self._report_from_yaml(CONF.report_definition)
         logger.debug("Loaded '%s' with content: %s"
                       % (CONF.report_definition, report))
@@ -113,30 +105,22 @@ class Report(object):
             kwargs = self._get_collector_kwargs(conf)
             logger.debug("Passing kwargs to the collector: %s"
                           % kwargs)
-            d = self.conn.get(conf["metric"], **kwargs)
-            logger.debug("Result from collector: '%s'" % d)
+            metric = self.conn.get(conf["metric"], **kwargs)
+            logger.debug("Result from collector: '%s'" % metric)
 
             if metagroup_list:
-                d = self._group_by_metagroup(d, metagroup_list)
+                metric = self._group_by_metagroup(metric, metagroup_list)
                 logger.debug("Ordered by metagroup/s '%s': %s"
-                              % (metagroup_list, d))
+                              % (metagroup_list, metric))
 
-            try:
-                chart = achus.renderer.chart.Chart(d,
-                                                   title,
-                                                   type=conf["chart"])
-                logger.debug("Metric will be displayed as a chart, type <%s>"
-                              % conf["chart"])
-                self.renderer.append(chart)
-                logger.debug(("Chart appended to report's list of "
-                               "objects-to-be-rendered"))
-            except KeyError:
-                logger.debug("Metric is not set to be displayed as "
-                              "a chart. Note that no other format is "
-                              "supported. Doing nothing.")
+            metric = self.conn.get(conf["metric"],
+                              **self._get_collector_kwargs(conf))
+            logging.debug("Result from collector: '%s'" % metric)
+
+            self.renderer.append_metric(title, metric, conf)
 
     def generate(self):
         """
         Triggers the report rendering.
         """
-        self.renderer.render()
+        self.renderer.render_to_file()

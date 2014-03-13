@@ -6,7 +6,7 @@ import MySQLdb as mdb
 from oslo.config import cfg
 
 from achus.collector import base
-import achus.exception
+from achus import exception
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -191,8 +191,8 @@ class GECollector(base.Collector):
                                   conditions=conditions)
         d_wall = self.get_wall_clock(group_by=group_by, conditions=conditions)
         if len(d_cpu.keys()) != len(d_wall.keys()):
-            raise achus.exception.ConnectorException(
-                "Cannot compute efficiency. Groups do not match!")
+            raise exception.ConnectorException("Cannot compute efficiency. "
+                                               "Groups do not match!")
         for k, v in d_cpu.iteritems():
             try:
                 d[k] = round(((d_cpu[k]/d_wall[k])*100), 2)
