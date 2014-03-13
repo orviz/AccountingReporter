@@ -113,10 +113,6 @@ class Report(object):
                 logger.debug("Ordered by metagroup/s '%s': %s"
                               % (metagroup_list, metric))
 
-            metric = self.conn.get(conf["metric"],
-                              **self._get_collector_kwargs(conf))
-            logging.debug("Result from collector: '%s'" % metric)
-
             self.renderer.append_metric(title, metric, conf)
 
     def generate(self):
