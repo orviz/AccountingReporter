@@ -1,5 +1,7 @@
 import logging
+
 from functools import wraps
+from oslo.config import cfg
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

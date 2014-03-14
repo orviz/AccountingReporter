@@ -91,7 +91,7 @@ class Report(object):
             logger.debug("(Collector: %s, Metric: %s)"
                           % (conf["collector"], conf["metric"]))
 
-            
+            print ">>>>>>>>>>> CONF: ", conf 
 
             ## Metagroup check
             #metagroup_list = []
@@ -103,12 +103,12 @@ class Report(object):
             #    conf["group_by"] = list(
             #            set(conf["group_by"]).difference(metagroup_list))
 
-            # Collector call
-            kwargs = self._get_collector_kwargs(conf)
-            logger.debug("Passing kwargs to the collector: %s"
-                          % kwargs)
-            metric = self.conn.get(conf["metric"], **kwargs)
-            logger.debug("Result from collector: '%s'" % metric)
+            ## Collector call
+            #kwargs = self._get_collector_kwargs(conf)
+            #logger.debug("Passing kwargs to the collector: %s"
+            #              % kwargs)
+            #metric = self.conn.get(conf["metric"], **kwargs)
+            #logger.debug("Result from collector: '%s'" % metric)
 
             #if metagroup_list:
             #    metric = self._group_by_metagroup(metric, metagroup_list)
