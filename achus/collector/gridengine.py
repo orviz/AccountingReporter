@@ -86,7 +86,10 @@ class GECollector(base.Collector):
         }
         condition_list = [cond for cond in self.DEFAULT_CONDITIONS]
         for k,v in kw.iteritems():
-            aux = (k, CONDITION_OPERATORS[k], "'%s'" % v)
+            if type(v) == type([]):
+                aux = (k, "IN %s" % (tuple(v),))
+            else:
+                aux = (k, CONDITION_OPERATORS[k], "'%s'" % v)
             condition_list.extend([" ".join(aux)])
         if condition_list:
             return " ".join(["WHERE", " AND ".join(condition_list)]) 

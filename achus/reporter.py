@@ -4,6 +4,7 @@ from oslo.config import cfg
 import yaml
 
 import achus.collector.gridengine
+import achus.exception
 import achus.renderer
 import achus.renderer.chart
 import achus.renderer.pdf
@@ -38,10 +39,7 @@ class Report(object):
         logger.debug("Loaded '%s' with content: %s"
                       % (CONF.report_definition, report))
         self.metric = report["metric"]
-        try:
-            self.metagroup = report["metagroup"]
-        except KeyError:
-            self.metagroup = {}
+        self.aggregate = report["aggregate"]
 
     def _report_from_yaml(self, report_file):
         # FIXME(aloga): We must catch exceptions here
@@ -54,31 +52,14 @@ class Report(object):
         collector method.
         """
         COLLECTOR_KWARGS = [
-            # GECollector
-            "group_by", "start_time", "end_time",
+            "group", "project",
+            "start_time", "end_time",
         ]
         d_kwargs = {}
         for k in d.keys():
             if k in COLLECTOR_KWARGS:
                 d_kwargs[k] = d[k]
         return d_kwargs
-
-    def _group_by_metagroup(self, data, metagroup_list):
-        """
-        Organizes data (summing) by the infrastructure type.
-        GROUP_FUNCS = {
-            "infrastructure": self._group_by_infrastructure,
-        }
-        """
-        d = {}
-        for k,v in data.iteritems():
-            for mg in metagroup_list:
-                if k in self.metagroup[mg]:
-                    try:
-                        d[mg] += v
-                    except KeyError:
-                        d[mg] = v
-        return d
 
     def collect(self):
         """
@@ -91,29 +72,30 @@ class Report(object):
             logger.debug("(Collector: %s, Metric: %s)"
                           % (conf["collector"], conf["metric"]))
 
-            print ">>>>>>>>>>> CONF: ", conf 
+            try:
+                group_by_list = self.aggregate[conf["aggregate"]].keys() or [] 
+                logger.debug("Aggregate's group_by parameters: %s" % group_by_list)
+                # FIXME (orviz) multiple group_by in an aggregate definition 
+                # must be supported
+                if len(group_by_list) != 1:
+                    raise achus.exception.AggregateException(("You must one and only" 
+                        "one 'group_by' (project, group) parameter"))
+            # FIXME (orviz) same here but in the metric definition
+            except TypeError:
+                raise achus.exception.AggregateException(("You must define one and only"
+                        "one aggregate per metric"))
+            except KeyError:
+                raise achus.exception.AggregateException(("Could not find"
+                            "'%s' aggregate definition" % conf["aggregate"]))
 
-            ## Metagroup check
-            #metagroup_list = []
-            #for mg in conf["group_by"]:
-            #    if mg in self.metagroup.keys():
-            #        metagroup_list.append(mg)
-            #if metagroup_list:
-            #    logger.info("Metagroup/s '%s' requested" % metagroup_list)
-            #    conf["group_by"] = list(
-            #            set(conf["group_by"]).difference(metagroup_list))
-
-            ## Collector call
-            #kwargs = self._get_collector_kwargs(conf)
-            #logger.debug("Passing kwargs to the collector: %s"
-            #              % kwargs)
-            #metric = self.conn.get(conf["metric"], **kwargs)
-            #logger.debug("Result from collector: '%s'" % metric)
-
-            #if metagroup_list:
-            #    metric = self._group_by_metagroup(metric, metagroup_list)
-            #    logger.debug("Ordered by metagroup/s '%s': %s"
-            #                  % (metagroup_list, metric))
+            for group_by in group_by_list:
+                # Add group_by to the condition list 
+                conf.update({ group_by: self.aggregate[conf["aggregate"]][group_by] })
+                kwargs = self._get_collector_kwargs(conf)
+                logger.debug("Passing kwargs to the collector: %s"
+                              % kwargs)
+                metric = self.conn.get(conf["metric"], group_by, **kwargs)
+                logger.debug("Result from collector: '%s'" % metric)
 
             self.renderer.append_metric(title, metric, conf)
 

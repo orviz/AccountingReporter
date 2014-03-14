@@ -8,3 +8,7 @@ class UnknownChartType(Exception):
 
 class ClassNotFound(Exception):
     pass
+
+
+class AggregateException(Exception):
+    pass
