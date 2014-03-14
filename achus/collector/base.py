@@ -35,15 +35,15 @@ class Collector(object):
             rest of kw: under 'conditions' kw.
         """
         @wraps(func)
-        def _group(self, metric, **kw):
+        def _group(self, metric, group_by, **kw):
             logger.debug("Received keyword arguments: %s" % kw)
             l_args = []; d_kwargs = {}
-            # arguments
-            try:
-                group_by = self.FIELD_MAPPING[kw.pop("group_by")]
-            except KeyError:
-                group_by = self.FIELD_MAPPING[CONF.collector_group_by]
-            l_args.append(group_by)
+            ## arguments
+            #try:
+            #    group_by = self.FIELD_MAPPING[kw.pop("group_by")]
+            #except KeyError:
+            #    group_by = self.FIELD_MAPPING[CONF.collector_group_by]
+            #l_args.append(group_by)
             # keyword arguments
             d_kwargs["conditions"] = {}
             for k, v in kw.iteritems():
@@ -51,19 +51,22 @@ class Collector(object):
                     d_kwargs["conditions"].update({self.FIELD_MAPPING[k]: v})
                 except KeyError:
                     logger.debug("Field '%s' not being considered" % k)
-            logger.debug("Resultant arguments: %s" % l_args)
+            #logger.debug("Resultant arguments: %s" % l_args)
             logger.debug("Resultant keyword arguments: %s" % d_kwargs)
             logger.debug("Calling decorated function '%s' (metric: %s)" 
                          % (func.func_name, metric))
-            output = func(self, metric, *l_args, **d_kwargs)
+            output = func(self, 
+                          metric, 
+                          self.FIELD_MAPPING[group_by], 
+                          **d_kwargs)
             return output
         return _group
 
     @group
-    def get(self, metric, *args, **kw):
+    def get(self, metric, group_by, **kw):
         METRICS = {
             "cpu": self.get_cpu_time,
             "wallclock": self.get_wall_clock,
             "efficiency": self.get_efficiency,
         }
-        return METRICS[metric](*args, **kw)
+        return METRICS[metric](group_by, **kw)
