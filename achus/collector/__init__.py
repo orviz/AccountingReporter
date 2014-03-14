@@ -40,7 +40,8 @@ class BaseCollector(object):
         @wraps(func)
         def _group(self, metric, group_by, **kw):
             logger.debug("Received keyword arguments: %s" % kw)
-            l_args = []; d_kwargs = {}
+            l_args = []
+            d_kwargs = {}
             ## arguments
             #try:
             #    group_by = self.FIELD_MAPPING[kw.pop("group_by")]

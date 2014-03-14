@@ -16,6 +16,7 @@ renderer_opts = [
 
 CONF.register_opts(renderer_opts, group="renderer")
 
+
 def Renderer():
     import_class = achus.utils.import_class
     cls = import_class(CONF.renderer.renderer_class)
