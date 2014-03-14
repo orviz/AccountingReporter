@@ -91,15 +91,17 @@ class Report(object):
             logger.debug("(Collector: %s, Metric: %s)"
                           % (conf["collector"], conf["metric"]))
 
-            # Metagroup check
-            metagroup_list = []
-            for mg in conf["group_by"]:
-                if mg in self.metagroup.keys():
-                    metagroup_list.append(mg)
-            if metagroup_list:
-                logger.info("Metagroup/s '%s' requested" % metagroup_list)
-                conf["group_by"] = list(
-                        set(conf["group_by"]).difference(metagroup_list))
+            
+
+            ## Metagroup check
+            #metagroup_list = []
+            #for mg in conf["group_by"]:
+            #    if mg in self.metagroup.keys():
+            #        metagroup_list.append(mg)
+            #if metagroup_list:
+            #    logger.info("Metagroup/s '%s' requested" % metagroup_list)
+            #    conf["group_by"] = list(
+            #            set(conf["group_by"]).difference(metagroup_list))
 
             # Collector call
             kwargs = self._get_collector_kwargs(conf)
@@ -108,10 +110,10 @@ class Report(object):
             metric = self.conn.get(conf["metric"], **kwargs)
             logger.debug("Result from collector: '%s'" % metric)
 
-            if metagroup_list:
-                metric = self._group_by_metagroup(metric, metagroup_list)
-                logger.debug("Ordered by metagroup/s '%s': %s"
-                              % (metagroup_list, metric))
+            #if metagroup_list:
+            #    metric = self._group_by_metagroup(metric, metagroup_list)
+            #    logger.debug("Ordered by metagroup/s '%s': %s"
+            #                  % (metagroup_list, metric))
 
             self.renderer.append_metric(title, metric, conf)
 
