@@ -1,7 +1,7 @@
 cairosvg
 cssselect
 MySQL-python
-pyPdf
+PyPDF2
 pygal
 tinycss
 PyYAML
