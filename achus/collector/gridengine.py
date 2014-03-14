@@ -26,9 +26,6 @@ opts = [
     cfg.StrOpt('dbname',
                default='ge_accounting',
                help='Name of the accounting database.'),
-    cfg.StrOpt('group_by',
-               default='group',
-               help='Define result ordering.'),
 ]
 
 CONF = cfg.CONF

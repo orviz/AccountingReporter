@@ -4,6 +4,15 @@ from functools import wraps
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+opts = [
+    cfg.StrOpt('collector_group_by',
+               default='group',
+               help='Define result ordering.'),
+]
+
+CONF = cfg.CONF
+CONF.register_opts(opts)
+
 class Collector(object):
     # (orviz) FIXME this method should not be inside any collector class
     def _to_hours(self, seconds):
@@ -31,7 +40,7 @@ class Collector(object):
             try:
                 group_by = self.FIELD_MAPPING[kw.pop("group_by")]
             except KeyError:
-                group_by = self.FIELD_MAPPING[CONF.gecollector.group_by]
+                group_by = self.FIELD_MAPPING[CONF.collector_group_by]
             l_args.append(group_by)
             # keyword arguments
             d_kwargs["conditions"] = {}
