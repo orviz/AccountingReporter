@@ -12,3 +12,7 @@ class ClassNotFound(Exception):
 
 class AggregateException(Exception):
     pass
+
+
+class CollectorNotFound(Exception):
+    pass

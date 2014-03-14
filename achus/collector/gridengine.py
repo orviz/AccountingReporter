@@ -4,7 +4,7 @@ import logging
 import MySQLdb as mdb
 from oslo.config import cfg
 
-from achus.collector import base
+from achus import collector
 from achus import exception
 
 logging.basicConfig(level=logging.DEBUG)
@@ -32,7 +32,7 @@ CONF = cfg.CONF
 CONF.register_opts(opts, group="gecollector")
 
 
-class GECollector(base.Collector):
+class GECollector(collector.BaseCollector):
     """
     Retrieves accounting data from a GridEngine system through SQL.
     """
