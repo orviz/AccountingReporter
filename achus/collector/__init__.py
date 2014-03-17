@@ -23,6 +23,83 @@ class BaseCollector(object):
     def _to_hours(self, seconds):
         return round((float(seconds) / 3600), 2)
 
+    def _expand_wildcards(self, value_list, result={}):
+        """
+        Analyses recursively the contents of the list of matches defined,
+        building a dict with four types of matches: 
+            IN          : exact positive match (and '*')
+            NOT IN      : exact negative match
+            CONTAINS    : partial positive match
+            NOT CONTAINS: partial negative match
+        where 
+            value_list: list of matches requested in the report definition.
+            result: list of SQL language equivalents to 'value_list'.
+        """
+        v = value_list[0]
+        if v.startswith("!"):
+            v = v[1:]
+            if v.find('*') == -1:
+                index = "NOT IN"
+            else:
+                index = "NOT CONTAINS"
+        elif v.find('*') != -1: 
+            if v == '*':
+                index = "IN"
+            else:
+                index = "CONTAINS"
+        else:
+            index = "IN"
+
+        try:
+            result[index].add(v)
+        except KeyError:
+            result[index] = set([v])
+
+        if len(value_list) == 1:
+            return result
+        else: 
+            return self._expand_wildcards(value_list[1:], result=result)
+
+    def _format_wildcard(self, condition, value, query_type="sql"):
+        """
+        Query language format of each of groups detected by the 
+        expand_wildcard function.
+        """
+        d = {
+            "sql": {
+                "IN": lambda param, match_list: [
+                    "%s IN %s" % (param, tuple(match_list))],
+                "NOT IN": lambda param, match_list:
+                    "%s NOT IN %s" % (param, tuple(match_list)),
+                "CONTAINS": lambda param, match_list: [
+                    "%s LIKE '%s'" % (param, match.replace('*', '%')) 
+                        for match in match_list],
+                "NOT CONTAINS": lambda param, match_list: [
+                    "%s NOT LIKE '%s'" % (param, match.replace('*', '%')) 
+                        for match in match_list],
+            }
+        }
+        
+        try:
+            d[query_type]
+        except KeyError:
+            raise CollectorException("Query language '%s' not known" 
+                                     % query_type)
+
+        # _expand_wildcards iterates over a list
+        if type(value) != type([]):
+            value = [value]
+        d_condition = self._expand_wildcards(value)
+        logger.debug("Wildcard expanding result: %s" % d_condition)
+
+        r = []
+        for mtype, mset in d_condition.iteritems():
+            r.extend(d[query_type][mtype](condition, mset))
+        return r
+
+    def _format_conditions(self, **kw):
+        raise NotImplementedError
+
     def get_cpu_time(self, **kw):
         raise NotImplementedError
 
