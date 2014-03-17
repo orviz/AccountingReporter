@@ -85,12 +85,20 @@ class GECollector(collector.BaseCollector):
             "ge_end_time": "<=",
         }
         condition_list = [cond for cond in self.DEFAULT_CONDITIONS]
-        for k, v in kw.iteritems():
-            if isinstance(v, list):
-                aux = (k, "IN %s" % (tuple(v),))
+        for k,v in kw.iteritems():
+            logger.debug("Analysing condition (%s, %s)" % (k,v))
+            if k in CONDITION_OPERATORS.keys():
+                logger.debug(("Condition '%s' not going through wilcard "
+                              "expansion" % k))
+                aux = "%s %s '%s'" % (k, CONDITION_OPERATORS[k], v)
             else:
-                aux = (k, CONDITION_OPERATORS[k], "'%s'" % v)
-            condition_list.extend([" ".join(aux)])
+                logger.debug(("Condition '%s' going through wildcard "
+                              "expansion" % k))
+                aux = self._format_wildcard(k, v, query_type="sql")
+                aux = "".join(['(', " OR ".join(aux), ')'])
+            logger.debug("Condition formatted to: %s", aux)
+            condition_list.append(aux)
+        
         if condition_list:
             return " ".join(["WHERE", " AND ".join(condition_list)])
 
