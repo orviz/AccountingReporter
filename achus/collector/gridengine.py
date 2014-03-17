@@ -45,11 +45,11 @@ class GECollector(collector.BaseCollector):
 
     FIELD_MAPPING = {
         "wall_clock": "ge_ru_wallclock",
-        "cpu_time"  : "ge_cpu",
+        "cpu_time": "ge_cpu",
         "start_time": "ge_start_time",
-        "end_time"  : "ge_end_time",
-        "group"     : "ge_group",
-        "project"   : "ge_project",
+        "end_time": "ge_end_time",
+        "group": "ge_group",
+        "project": "ge_project",
     }
 
     def _format_value(self, *args):
@@ -85,14 +85,14 @@ class GECollector(collector.BaseCollector):
             "ge_end_time": "<=",
         }
         condition_list = [cond for cond in self.DEFAULT_CONDITIONS]
-        for k,v in kw.iteritems():
-            if type(v) == type([]):
+        for k, v in kw.iteritems():
+            if isinstance(v, list):
                 aux = (k, "IN %s" % (tuple(v),))
             else:
                 aux = (k, CONDITION_OPERATORS[k], "'%s'" % v)
             condition_list.extend([" ".join(aux)])
         if condition_list:
-            return " ".join(["WHERE", " AND ".join(condition_list)]) 
+            return " ".join(["WHERE", " AND ".join(condition_list)])
 
     def query(self, parameter, group_by, conditions=None):
         """
@@ -110,7 +110,11 @@ class GECollector(collector.BaseCollector):
 
         with contextlib.closing(conn):
             curs = conn.cursor()
-            cmd = "SELECT %s,SUM(%s) FROM ge_jobs %s GROUP BY %s" % (group_by, self.FIELD_MAPPING[parameter], self._format_conditions(**conditions), group_by)
+            cmd = ("SELECT %s, SUM(%s) FROM ge_jobs %s GROUP BY %s" %
+                   (group_by,
+                    self.FIELD_MAPPING[parameter],
+                    self._format_conditions(**conditions),
+                    group_by))
             logger.debug("MySQL command: `%s`" % cmd)
             curs.execute(cmd)
             res = self._format_result(curs.fetchall())

@@ -63,7 +63,6 @@ class Report(object):
                 d_kwargs[k] = d[k]
         return d_kwargs
 
-
     def _get_collectors(self):
         collectors = [i.get("collector") for _, i in self.metric.items()]
 
@@ -100,26 +99,30 @@ class Report(object):
 
             try:
                 group_by_list = self.aggregate[conf["aggregate"]].keys() or []
-                logger.debug("Aggregate's group_by parameters: %s" % group_by_list)
+                logger.debug("Aggregate's group_by parameters: %s" %
+                             group_by_list)
                 # FIXME (orviz) multiple group_by in an aggregate definition
                 # must be supported
                 if len(group_by_list) != 1:
-                    raise achus.exception.AggregateException(("You must one and only"
-                        "one 'group_by' (project, group) parameter"))
+                    msg = ("You must define one and only one 'group_by' "
+                           "(project, group) parameter")
+                    raise achus.exception.AggregateException(msg)
             # FIXME (orviz) same here but in the metric definition
             except TypeError:
-                raise achus.exception.AggregateException(("You must define one and only"
-                        "one aggregate per metric"))
+                msg = "You must define one and only one aggregate per metric"
+                raise achus.exception.AggregateException(msg)
             except KeyError:
-                raise achus.exception.AggregateException(("Could not find"
-                            "'%s' aggregate definition" % conf["aggregate"]))
+                msg = "Could not find '%s' aggregate definition"
+                raise achus.exception.AggregateException(msg %
+                                                         conf["aggregate"])
 
             for group_by in group_by_list:
                 # Add group_by to the condition list
-                conf.update({ group_by: self.aggregate[conf["aggregate"]][group_by] })
+                d = {group_by: self.aggregate[conf["aggregate"]][group_by]}
+                conf.update(d)
                 kwargs = self._get_collector_kwargs(conf)
                 logger.debug("Passing kwargs to the collector: %s"
-                              % kwargs)
+                             % kwargs)
                 metric = self.conn.get(conf["metric"], group_by, **kwargs)
                 logger.debug("Result from collector: '%s'" % metric)
 
