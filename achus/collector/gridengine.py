@@ -172,7 +172,7 @@ class GECollector(collector.BaseCollector):
         d_cpu = self.get_cpu_time(group_by, conditions=conditions)
         d_wall = self.get_wall_clock(group_by, conditions=conditions)
         if len(d_cpu.keys()) != len(d_wall.keys()):
-            raise exception.ConnectorException("Cannot compute efficiency. "
+            raise exception.CollectorException("Cannot compute efficiency. "
                                                "Groups do not match!")
         for k, v in d_cpu.iteritems():
             try:

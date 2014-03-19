@@ -3,6 +3,7 @@ from functools import wraps
 
 from oslo.config import cfg
 
+from achus import exception
 from achus import loadables
 
 opts = [
@@ -83,8 +84,8 @@ class BaseCollector(object):
         try:
             d[query_type]
         except KeyError:
-            raise CollectorException("Query language '%s' not known"
-                                     % query_type)
+            raise exception.CollectorException("Query language '%s' not known"
+                                               % query_type)
 
         # _expand_wildcards iterates over a list
         if not isinstance(value, list):
