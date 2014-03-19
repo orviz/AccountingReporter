@@ -120,7 +120,7 @@ class BaseCollector(object):
         @functools.wraps(func)
         def _group(self, metric, group_by, **kw):
             logger.debug("Received keyword arguments: %s" % kw)
-            l_args = []
+            #l_args = []
             d_kwargs = {}
             ## arguments
             #try:
