@@ -1,8 +1,8 @@
 import types
 
 import mock
-import pygal
 from oslo.config import cfg
+import pygal
 
 from achus import exception
 import achus.renderer

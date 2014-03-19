@@ -2,8 +2,8 @@ import logging
 import StringIO
 
 import cairosvg
-import PyPDF2
 from oslo.config import cfg
+import PyPDF2
 
 import achus.renderer.chart
 
