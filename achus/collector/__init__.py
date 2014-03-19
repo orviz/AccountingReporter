@@ -24,7 +24,7 @@ class BaseCollector(object):
     def _to_hours(self, seconds):
         return round((float(seconds) / 3600), 2)
 
-    def _expand_wildcards(self, value_list, result=None):
+    def _expand_wildcards(self, value_list):
         """Expand wildcards.
 
         Analyses recursively the contents of the list of matches defined,
@@ -35,35 +35,31 @@ class BaseCollector(object):
             NOT CONTAINS: partial negative match
         where
             value_list: list of matches requested in the report definition.
-            result: list of SQL language equivalents to 'value_list'.
         """
-        if not result:
-            result = {}
-        v = value_list[0]
-        if v.startswith("!"):
-            v = v[1:]
-            if v.find('*') == -1:
-                index = "NOT IN"
+        result = {}
+        for v in set(value_list):
+            if v.startswith("!"):
+                v = v[1:]
+                if not v:
+                    # FIXME(aloga): check this message
+                    raise exception.CollectorException("Cannot just negate "
+                                                       "a match!")
+                if "*" in v:
+                    index = "NOT CONTAINS"
+                else:
+                    index = "NOT IN"
             else:
-                index = "NOT CONTAINS"
-        elif v.find('*') != -1:
-            if v == '*':
-                index = "IN"
-            else:
-                index = "CONTAINS"
-        else:
-            index = "IN"
+                if "*" in v and v != "*":
+                    index = "CONTAINS"
+                else:
+                    index = "IN"
 
-        if v:
-            try:
-                result[index].add(v)
-            except KeyError:
-                result[index] = set([v])
-
-        if len(value_list) == 1:
-            return result
-        else:
-            return self._expand_wildcards(value_list[1:], result=result)
+            if v in set().union(*result.values()):
+                # FIXME(aloga): check this message
+                raise exception.CollectorException("Duplicated rule for %s" %
+                                                   v)
+            result.setdefault(index, set()).add(v)
+        return result
 
     def _format_wildcard(self, condition, value, query_type="sql"):
         """Format the wilcards into backend queries.

@@ -22,13 +22,12 @@ class CollectorTest(test.TestCase):
         self.assertRaises(NotImplementedError,
                           self.collector.get_efficiency)
 
-    def test_expand_wilcards_empty(self):
-        self.assertRaises(IndexError,
-                          self.collector._expand_wildcards,
-                          [])
-
     def test_expand_wilcards_in(self):
         value_result_map = (
+            (
+                [],
+                {}
+            ),
             (
                 ["foo", "bar", "baz"],
                 {'IN': {'baz', 'foo', 'bar'}}
@@ -63,14 +62,16 @@ class CollectorTest(test.TestCase):
                  'NOT IN': {'bar'},
                  'CONTAINS': {'*baz'}, 'NOT CONTAINS': {'bazonk*'}}
             ),
-            (
-                ["!"],
-                {}
-            ),
         )
         for value, expected_result in value_result_map:
             self.assertEqual(expected_result,
                              self.collector._expand_wildcards(value))
+
+    def test_expand_wilcards_raises(self):
+        for value in (["!"], ["!foo", "foo"]):
+            self.assertRaises(exception.CollectorException,
+                              self.collector._expand_wildcards,
+                              value)
 
     def test_format_wilcards_raises(self):
         self.assertRaises(exception.CollectorException,
