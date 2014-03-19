@@ -26,12 +26,12 @@ class BaseCollector(object):
     def _expand_wildcards(self, value_list, result={}):
         """
         Analyses recursively the contents of the list of matches defined,
-        building a dict with four types of matches: 
+        building a dict with four types of matches:
             IN          : exact positive match (and '*')
             NOT IN      : exact negative match
             CONTAINS    : partial positive match
             NOT CONTAINS: partial negative match
-        where 
+        where
             value_list: list of matches requested in the report definition.
             result: list of SQL language equivalents to 'value_list'.
         """
@@ -42,7 +42,7 @@ class BaseCollector(object):
                 index = "NOT IN"
             else:
                 index = "NOT CONTAINS"
-        elif v.find('*') != -1: 
+        elif v.find('*') != -1:
             if v == '*':
                 index = "IN"
             else:
@@ -57,37 +57,37 @@ class BaseCollector(object):
 
         if len(value_list) == 1:
             return result
-        else: 
+        else:
             return self._expand_wildcards(value_list[1:], result=result)
 
     def _format_wildcard(self, condition, value, query_type="sql"):
         """
-        Query language format of each of groups detected by the 
+        Query language format of each of groups detected by the
         expand_wildcard function.
         """
         d = {
             "sql": {
                 "IN": lambda param, match_list: [
                     "%s IN %s" % (param, tuple(match_list))],
-                "NOT IN": lambda param, match_list:
-                    "%s NOT IN %s" % (param, tuple(match_list)),
+                "NOT IN": lambda param, match_list: [
+                    "%s NOT IN %s" % (param, tuple(match_list))],
                 "CONTAINS": lambda param, match_list: [
-                    "%s LIKE '%s'" % (param, match.replace('*', '%')) 
-                        for match in match_list],
+                    "%s LIKE '%s'" % (param, match.replace('*', '%'))
+                    for match in match_list],
                 "NOT CONTAINS": lambda param, match_list: [
-                    "%s NOT LIKE '%s'" % (param, match.replace('*', '%')) 
-                        for match in match_list],
+                    "%s NOT LIKE '%s'" % (param, match.replace('*', '%'))
+                    for match in match_list],
             }
         }
-        
+
         try:
             d[query_type]
         except KeyError:
-            raise CollectorException("Query language '%s' not known" 
+            raise CollectorException("Query language '%s' not known"
                                      % query_type)
 
         # _expand_wildcards iterates over a list
-        if type(value) != type([]):
+        if not isinstance(value, list):
             value = [value]
         d_condition = self._expand_wildcards(value)
         logger.debug("Wildcard expanding result: %s" % d_condition)

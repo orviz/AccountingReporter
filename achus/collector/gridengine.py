@@ -85,8 +85,8 @@ class GECollector(collector.BaseCollector):
             "ge_end_time": "<=",
         }
         condition_list = [cond for cond in self.DEFAULT_CONDITIONS]
-        for k,v in kw.iteritems():
-            logger.debug("Analysing condition (%s, %s)" % (k,v))
+        for k, v in kw.iteritems():
+            logger.debug("Analysing condition (%s, %s)" % (k, v))
             if k in CONDITION_OPERATORS.keys():
                 logger.debug(("Condition '%s' not going through wilcard "
                               "expansion" % k))
@@ -98,7 +98,7 @@ class GECollector(collector.BaseCollector):
                 aux = "".join(['(', " OR ".join(aux), ')'])
             logger.debug("Condition formatted to: %s", aux)
             condition_list.append(aux)
-        
+
         if condition_list:
             return " ".join(["WHERE", " AND ".join(condition_list)])
 
