@@ -96,7 +96,7 @@ function run_pep8 {
     echo
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
     echo -e "\t Running PEP8"
-    ${wrapper} pep8 achus && echo OK
+    ${wrapper} flake8 achus && echo OK
     RETURN=$?
     echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     echo

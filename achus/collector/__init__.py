@@ -1,5 +1,5 @@
 import logging
-from functools import wraps
+import functools
 
 from oslo.config import cfg
 
@@ -115,7 +115,7 @@ class BaseCollector(object):
             'group_by': mandatory
             rest of kw: under 'conditions' kw.
         """
-        @wraps(func)
+        @functools.wraps(func)
         def _group(self, metric, group_by, **kw):
             logger.debug("Received keyword arguments: %s" % kw)
             l_args = []
