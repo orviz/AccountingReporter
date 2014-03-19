@@ -1,6 +1,10 @@
-nose
 coverage
-mock
-pep8
-testtools
 fixtures
+flake8==2.0
+hacking
+mock
+nose
+pep8==1.4.5
+testtools
+
+oslo.config
