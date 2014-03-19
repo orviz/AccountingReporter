@@ -33,9 +33,7 @@ CONF.register_opts(opts, group="gecollector")
 
 
 class GECollector(collector.BaseCollector):
-    """
-    Retrieves accounting data from a GridEngine system through SQL.
-    """
+    """Retrieves accounting data from a GridEngine system through SQL."""
     DEFAULT_CONDITIONS = [
         "ge_slots>=1",
         "ge_ru_wallclock>=0",
@@ -53,9 +51,7 @@ class GECollector(collector.BaseCollector):
     }
 
     def _format_value(self, *args):
-        """
-        Transforms 'v' value to float needed to render the graph.
-        """
+        """Transforms 'v' value to float needed to render the graph."""
         import decimal
         l = []
         for arg in args:
@@ -65,8 +61,9 @@ class GECollector(collector.BaseCollector):
         return l
 
     def _format_result(self, data):
-        """
-        Aggregates the tuples retrieved by:
+        """Aggregates the tuples retrieved.
+
+        Aggregates the tuples by:
             t[0], t[1:],
         converting the numeric values to float. Finally, returns a list
         of these tuples.
@@ -77,16 +74,14 @@ class GECollector(collector.BaseCollector):
         return [(item[0], self._format_value(*item[1:])) for item in data]
 
     def _format_conditions(self, **kw):
-        """
-        Adds the given conditions (default+requested) to the SQL query.
-        """
+        """Adds the given conditions (default+requested) to the SQL query."""
         CONDITION_OPERATORS = {
             "ge_start_time": ">=",
             "ge_end_time": "<=",
         }
         condition_list = [cond for cond in self.DEFAULT_CONDITIONS]
-        for k,v in kw.iteritems():
-            logger.debug("Analysing condition (%s, %s)" % (k,v))
+        for k, v in kw.iteritems():
+            logger.debug("Analysing condition (%s, %s)" % (k, v))
             if k in CONDITION_OPERATORS.keys():
                 logger.debug(("Condition '%s' not going through wilcard "
                               "expansion" % k))
@@ -98,17 +93,17 @@ class GECollector(collector.BaseCollector):
                 aux = "".join(['(', " OR ".join(aux), ')'])
             logger.debug("Condition formatted to: %s", aux)
             condition_list.append(aux)
-        
+
         if condition_list:
             return " ".join(["WHERE", " AND ".join(condition_list)])
 
     def query(self, parameter, group_by, conditions=None):
-        """
-        Performs a SQL query based on the parameter requested.
-            'group_by': in case of multiple group, the order of this string
-                        is important for the rest of the code flow. The first
-                        element must always be (group, project) and then the
-                        rest (e.g. "ge_group,ge_slots")
+        """Performs a SQL query based on the parameter requested.
+
+        'group_by': in case of multiple group, the order of this string
+                    is important for the rest of the code flow. The first
+                    element must always be (group, project) and then the
+                    rest (e.g. "ge_group,ge_slots")
         """
         conn = mdb.connect(CONF.gecollector.host,
                            CONF.gecollector.user,
@@ -129,9 +124,9 @@ class GECollector(collector.BaseCollector):
             return res
 
     def get_cpu_time(self, group_by, conditions=None):
-        """
-        Computes the CPU time grouped by 'ge_group' in hours.
-            conditions: extra conditions to be added to the SQL query.
+        """Computes the CPU time grouped by 'ge_group' in hours.
+
+        conditions: extra conditions to be added to the SQL query.
         """
         d = {}
         for item in self.query("cpu_time",
@@ -146,10 +141,10 @@ class GECollector(collector.BaseCollector):
         return d
 
     def get_wall_clock(self, group_by, conditions=None):
-        """
-        Retrieves the WALLCLOCK time grouped by 'ge_group' in hours.
-            Number of slots being used must be taken into account.
-            conditions: extra conditions to be added to the SQL query.
+        """Retrieves the WALLCLOCK time grouped by 'ge_group' in hours.
+
+        Number of slots being used must be taken into account.
+        conditions: extra conditions to be added to the SQL query.
         """
         d = {}
         for item in self.query("wall_clock", "%s,ge_slots" % group_by,
@@ -164,15 +159,15 @@ class GECollector(collector.BaseCollector):
         return d
 
     def get_efficiency(self, group_by, conditions=None):
-        """
-        Retrieves the CPU time grouped by 'ge_group'.
-            conditions: extra conditions to be added to the SQL query.
+        """Retrieves the CPU time grouped by 'ge_group'.
+
+        conditions: extra conditions to be added to the SQL query.
         """
         d = {}
         d_cpu = self.get_cpu_time(group_by, conditions=conditions)
         d_wall = self.get_wall_clock(group_by, conditions=conditions)
         if len(d_cpu.keys()) != len(d_wall.keys()):
-            raise exception.ConnectorException("Cannot compute efficiency. "
+            raise exception.CollectorException("Cannot compute efficiency. "
                                                "Groups do not match!")
         for k, v in d_cpu.iteritems():
             try:

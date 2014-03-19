@@ -1,4 +1,4 @@
-class ConnectorException(Exception):
+class CollectorException(Exception):
     pass
 
 

@@ -23,15 +23,9 @@ CONF.register_opts(opts)
 
 
 class Report(object):
-    """
-    Main class, triggers reports based on the input given.
-    """
+    """Main class, triggers reports based on the input given."""
 
     def __init__(self):
-        """
-        renderer: type of report.
-        """
-
         self.collector_handler = collector.CollectorHandler()
         self.available_collectors = self.collector_handler.get_all_classes()
 
@@ -49,10 +43,7 @@ class Report(object):
             return yaml.safe_load(f)
 
     def _get_collector_kwargs(self, d):
-        """
-        Fills the keyword argumnents that will be passed to the
-        collector method.
-        """
+        """Fills the keyword args for the collector method."""
         COLLECTOR_KWARGS = [
             "group", "project",
             "start_time", "end_time",
@@ -83,9 +74,7 @@ class Report(object):
         return good_collectors
 
     def collect(self):
-        """
-        Gathers metric data.
-        """
+        """Gathers metric data."""
         collectors = self._get_collectors()
         for title, conf in self.metric.iteritems():
             logger.info("Gathering data from metric '%s'" % title)
@@ -129,7 +118,5 @@ class Report(object):
             self.renderer.append_metric(title, metric, conf)
 
     def generate(self):
-        """
-        Triggers the report rendering.
-        """
+        """Triggers the report rendering."""
         self.renderer.render_to_file()

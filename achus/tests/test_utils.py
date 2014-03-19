@@ -1,7 +1,5 @@
 import types
 
-import fixtures
-
 from achus import exception
 from achus import test
 from achus import utils

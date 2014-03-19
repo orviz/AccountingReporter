@@ -1,11 +1,10 @@
-import fixtures
 import mock
 from oslo.config import cfg
 
 from achus import exception
-from achus import reporter
-import achus.renderer.pdf
 import achus.renderer.chart
+import achus.renderer.pdf
+from achus import reporter
 from achus import test
 import achus.tests.test_reporter
 

@@ -6,8 +6,7 @@ CONF.import_opt('output_file', 'achus.renderer', group="renderer")
 
 
 class Renderer(object):
-    """
-    Base class for all renderers.
+    """Base class for all renderers.
 
     A render accepts metric using the append_metric method. Those metrics
     will be then rendered into another format.
@@ -23,8 +22,7 @@ class Renderer(object):
 
     @abc.abstractmethod
     def render(self):
-        """
-        Generate a RAW report.
+        """Generate a RAW report.
 
         This function must be a generator that returns the RAW reports
         in the expected format for the renderer.

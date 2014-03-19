@@ -96,7 +96,7 @@ function run_pep8 {
     echo
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
     echo -e "\t Running PEP8"
-    ${wrapper} pep8 achus && echo OK
+    ${wrapper} flake8 achus && echo OK
     RETURN=$?
     echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     echo
@@ -123,6 +123,7 @@ if [ $no_venv -eq 0 ]; then
     if [ -e ${venv} ]; then
         wrapper="${with_venv}"
     else
+        echo -e "No virtual environment found...create one? (Y/n) \c"
         read use_ve
         if [ "x$use_ve" = "xY" -o "x$use_ve" = "x" -o "x$use_ve" = "xy" ]; then
             # Install the virtualenv and run the test suite in it

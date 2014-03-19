@@ -1,8 +1,9 @@
+import functools
 import logging
-from functools import wraps
 
 from oslo.config import cfg
 
+from achus import exception
 from achus import loadables
 
 opts = [
@@ -24,14 +25,15 @@ class BaseCollector(object):
         return round((float(seconds) / 3600), 2)
 
     def _expand_wildcards(self, value_list, result={}):
-        """
+        """Expand wildcards.
+
         Analyses recursively the contents of the list of matches defined,
-        building a dict with four types of matches: 
+        building a dict with four types of matches:
             IN          : exact positive match (and '*')
             NOT IN      : exact negative match
             CONTAINS    : partial positive match
             NOT CONTAINS: partial negative match
-        where 
+        where
             value_list: list of matches requested in the report definition.
             result: list of SQL language equivalents to 'value_list'.
         """
@@ -42,7 +44,7 @@ class BaseCollector(object):
                 index = "NOT IN"
             else:
                 index = "NOT CONTAINS"
-        elif v.find('*') != -1: 
+        elif v.find('*') != -1:
             if v == '*':
                 index = "IN"
             else:
@@ -57,37 +59,38 @@ class BaseCollector(object):
 
         if len(value_list) == 1:
             return result
-        else: 
+        else:
             return self._expand_wildcards(value_list[1:], result=result)
 
     def _format_wildcard(self, condition, value, query_type="sql"):
-        """
-        Query language format of each of groups detected by the 
+        """Format the wilcards into backend queries.
+
+        Query language format of each of groups detected by the
         expand_wildcard function.
         """
         d = {
             "sql": {
                 "IN": lambda param, match_list: [
                     "%s IN %s" % (param, tuple(match_list))],
-                "NOT IN": lambda param, match_list:
-                    "%s NOT IN %s" % (param, tuple(match_list)),
+                "NOT IN": lambda param, match_list: [
+                    "%s NOT IN %s" % (param, tuple(match_list))],
                 "CONTAINS": lambda param, match_list: [
-                    "%s LIKE '%s'" % (param, match.replace('*', '%')) 
-                        for match in match_list],
+                    "%s LIKE '%s'" % (param, match.replace('*', '%'))
+                    for match in match_list],
                 "NOT CONTAINS": lambda param, match_list: [
-                    "%s NOT LIKE '%s'" % (param, match.replace('*', '%')) 
-                        for match in match_list],
+                    "%s NOT LIKE '%s'" % (param, match.replace('*', '%'))
+                    for match in match_list],
             }
         }
-        
+
         try:
             d[query_type]
         except KeyError:
-            raise CollectorException("Query language '%s' not known" 
-                                     % query_type)
+            raise exception.CollectorException("Query language '%s' not known"
+                                               % query_type)
 
         # _expand_wildcards iterates over a list
-        if type(value) != type([]):
+        if not isinstance(value, list):
             value = [value]
         d_condition = self._expand_wildcards(value)
         logger.debug("Wildcard expanding result: %s" % d_condition)
@@ -107,17 +110,17 @@ class BaseCollector(object):
         raise NotImplementedError
 
     def group(func):
-        """
-        Decorator method to organize both the arguments and keyword
-        arguments. Mandatory arguments will be passed as arguments while
+        """Decorator to organize args and kwargs.
+
+        Mandatory arguments will be passed as arguments while
         the optional ones as keyword arguments.
             'group_by': mandatory
             rest of kw: under 'conditions' kw.
         """
-        @wraps(func)
+        @functools.wraps(func)
         def _group(self, metric, group_by, **kw):
             logger.debug("Received keyword arguments: %s" % kw)
-            l_args = []
+            #l_args = []
             d_kwargs = {}
             ## arguments
             #try:

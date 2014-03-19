@@ -2,8 +2,8 @@ import logging
 import StringIO
 
 import cairosvg
-import PyPDF2
 from oslo.config import cfg
+import PyPDF2
 
 import achus.renderer.chart
 
@@ -17,8 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class PDFChart(achus.renderer.base.Renderer):
-    """
-    Generates PDF report containing charts.
+    """Generates PDF report containing charts.
 
     The metrics added using the append_metric method
     will be rendered into a PDF report containing charts.
@@ -44,8 +43,7 @@ class PDFChart(achus.renderer.base.Renderer):
         return output
 
     def render(self):
-        """
-        Generates the PDF report.
+        """Generates the PDF report.
 
         This method will render each of the metrics that have been added
         into charts, that will be then joined into a PDF file.
@@ -61,7 +59,7 @@ class PDFChart(achus.renderer.base.Renderer):
         yield output_stream.getvalue()
 
     def render_to_file(self, filename=CONF.renderer.output_file):
-        """Write the PDF report into filename"""
+        """Write the PDF report into filename."""
         output = self._generate_pdf()
         output_stream = file(filename, "wb")
         output.write(output_stream)

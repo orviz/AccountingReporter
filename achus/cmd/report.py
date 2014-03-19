@@ -2,8 +2,8 @@ import sys
 
 from oslo.config import cfg
 
-import achus.reporter
 import achus.config
+import achus.reporter
 
 CONF = cfg.CONF
 
