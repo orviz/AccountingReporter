@@ -25,7 +25,8 @@ class BaseCollector(object):
         return round((float(seconds) / 3600), 2)
 
     def _expand_wildcards(self, value_list, result={}):
-        """
+        """Expand wildcards.
+
         Analyses recursively the contents of the list of matches defined,
         building a dict with four types of matches:
             IN          : exact positive match (and '*')
@@ -62,7 +63,8 @@ class BaseCollector(object):
             return self._expand_wildcards(value_list[1:], result=result)
 
     def _format_wildcard(self, condition, value, query_type="sql"):
-        """
+        """Format the wilcards into backend queries.
+
         Query language format of each of groups detected by the
         expand_wildcard function.
         """
@@ -108,9 +110,9 @@ class BaseCollector(object):
         raise NotImplementedError
 
     def group(func):
-        """
-        Decorator method to organize both the arguments and keyword
-        arguments. Mandatory arguments will be passed as arguments while
+        """Decorator to organize args and kwargs.
+
+        Mandatory arguments will be passed as arguments while
         the optional ones as keyword arguments.
             'group_by': mandatory
             rest of kw: under 'conditions' kw.

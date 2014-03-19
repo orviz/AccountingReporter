@@ -15,8 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class Chart(achus.renderer.base.Renderer):
-    """
-    Generates a chart report using PyGal.
+    """Generates a chart report using PyGal.
 
     The metrics added using the append_metric method
     will be rendered into chart reports.
@@ -50,8 +49,7 @@ class Chart(achus.renderer.base.Renderer):
             yield chart
 
     def render(self):
-        """
-        Render the metrics into several SVG charts.
+        """Render the metrics into several SVG charts.
 
         This method is a generator that yields a chart for each of the
         metrics stored.
