@@ -1,4 +1,3 @@
-import fixtures
 import mock
 from oslo.config import cfg
 
