@@ -24,7 +24,7 @@ class BaseCollector(object):
     def _to_hours(self, seconds):
         return round((float(seconds) / 3600), 2)
 
-    def _expand_wildcards(self, value_list, result={}):
+    def _expand_wildcards(self, value_list, result=None):
         """Expand wildcards.
 
         Analyses recursively the contents of the list of matches defined,
@@ -37,6 +37,8 @@ class BaseCollector(object):
             value_list: list of matches requested in the report definition.
             result: list of SQL language equivalents to 'value_list'.
         """
+        if not result:
+            result = {}
         v = value_list[0]
         if v.startswith("!"):
             v = v[1:]
@@ -52,10 +54,11 @@ class BaseCollector(object):
         else:
             index = "IN"
 
-        try:
-            result[index].add(v)
-        except KeyError:
-            result[index] = set([v])
+        if v:
+            try:
+                result[index].add(v)
+            except KeyError:
+                result[index] = set([v])
 
         if len(value_list) == 1:
             return result
