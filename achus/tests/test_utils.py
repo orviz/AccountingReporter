@@ -6,6 +6,9 @@ from achus import utils
 
 
 class UtilTest(test.TestCase):
+    def test_seconds_to_hours_conversion(self):
+        self.assertEqual(1, utils.to_hours(3600))
+
     def test_import_class(self):
         self.assertEqual(test.TestCase,
                          utils.import_class("achus.test.TestCase"))

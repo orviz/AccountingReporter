@@ -20,11 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseCollector(object):
-    # FIXME this method should not be inside any connector class
-    def _to_hours(self, seconds):
-        return round((float(seconds) / 3600), 2)
-
-    def _expand_wildcards(self, value_list, result={}):
+    def _expand_wildcards(self, value_list):
         """Expand wildcards.
 
         Analyses recursively the contents of the list of matches defined,
@@ -35,32 +31,31 @@ class BaseCollector(object):
             NOT CONTAINS: partial negative match
         where
             value_list: list of matches requested in the report definition.
-            result: list of SQL language equivalents to 'value_list'.
         """
-        v = value_list[0]
-        if v.startswith("!"):
-            v = v[1:]
-            if v.find('*') == -1:
-                index = "NOT IN"
+        result = {}
+        for v in set(value_list):
+            if v.startswith("!"):
+                v = v[1:]
+                if not v:
+                    # FIXME(aloga): check this message
+                    raise exception.CollectorException("Cannot just negate "
+                                                       "a match!")
+                if "*" in v:
+                    index = "NOT CONTAINS"
+                else:
+                    index = "NOT IN"
             else:
-                index = "NOT CONTAINS"
-        elif v.find('*') != -1:
-            if v == '*':
-                index = "IN"
-            else:
-                index = "CONTAINS"
-        else:
-            index = "IN"
+                if "*" in v and v != "*":
+                    index = "CONTAINS"
+                else:
+                    index = "IN"
 
-        try:
-            result[index].add(v)
-        except KeyError:
-            result[index] = set([v])
-
-        if len(value_list) == 1:
-            return result
-        else:
-            return self._expand_wildcards(value_list[1:], result=result)
+            if v in set().union(*result.values()):
+                # FIXME(aloga): check this message
+                raise exception.CollectorException("Duplicated rule for %s" %
+                                                   v)
+            result.setdefault(index, set()).add(v)
+        return result
 
     def _format_wildcard(self, condition, value, query_type="sql"):
         """Format the wilcards into backend queries.
@@ -68,18 +63,34 @@ class BaseCollector(object):
         Query language format of each of groups detected by the
         expand_wildcard function.
         """
+        def _format(operator, param, match, match_replace=None):
+            if match_replace:
+                match = set([i.replace(*match_replace) for i in match])
+            if operator in ("IN", "NOT IN"):
+                match_str = "(%s)" % ", ".join(["'%s'" % i for i in match])
+                ret = ["%s %s %s" % (param, operator, match_str)]
+            else:
+                ret = ["%s %s '%s'" % (param, operator, i) for i in match]
+            return ret
+
+        def _format_in(param, match):
+            return _format("IN", param, match)
+
+        def _format_not_in(param, match):
+            return _format("NOT IN", param, match)
+
+        def _format_like(param, match):
+            return _format("LIKE", param, match, match_replace=('*', '%'))
+
+        def _format_not_like(param, match):
+            return _format("NOT LIKE", param, match, match_replace=('*', '%'))
+
         d = {
             "sql": {
-                "IN": lambda param, match_list: [
-                    "%s IN %s" % (param, tuple(match_list))],
-                "NOT IN": lambda param, match_list: [
-                    "%s NOT IN %s" % (param, tuple(match_list))],
-                "CONTAINS": lambda param, match_list: [
-                    "%s LIKE '%s'" % (param, match.replace('*', '%'))
-                    for match in match_list],
-                "NOT CONTAINS": lambda param, match_list: [
-                    "%s NOT LIKE '%s'" % (param, match.replace('*', '%'))
-                    for match in match_list],
+                "IN": _format_in,
+                "NOT IN": _format_not_in,
+                "CONTAINS": _format_like,
+                "NOT CONTAINS": _format_not_like,
             }
         }
 

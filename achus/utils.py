@@ -4,6 +4,10 @@ import traceback
 from achus import exception
 
 
+def to_hours(seconds):
+    return round((float(seconds) / 3600), 2)
+
+
 def import_class(import_str):
     """Returns a class from a string including module and class."""
     mod_str, _sep, class_str = import_str.rpartition('.')

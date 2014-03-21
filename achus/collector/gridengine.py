@@ -6,6 +6,7 @@ from oslo.config import cfg
 
 from achus import collector
 from achus import exception
+from achus import utils
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -133,7 +134,7 @@ class GECollector(collector.BaseCollector):
                                group_by=group_by,
                                conditions=conditions):
             index, values = item
-            cpu_time = self._to_hours(values[0])
+            cpu_time = utils.to_hours(values[0])
             try:
                 d[index] += cpu_time
             except KeyError:
@@ -151,7 +152,7 @@ class GECollector(collector.BaseCollector):
                                conditions=conditions):
             index, values = item
             slots, wall_clock = values
-            wall_clock = self._to_hours(wall_clock)
+            wall_clock = utils.to_hours(wall_clock)
             try:
                 d[index] += wall_clock * slots
             except KeyError:
