@@ -38,9 +38,30 @@ class Report(object):
         self.aggregate = report["aggregate"]
 
     def _report_from_yaml(self, report_file):
-        # FIXME(aloga): We must catch exceptions here
         with open(CONF.report_definition, "rb") as f:
-            return yaml.safe_load(f)
+            yaml_data = yaml.safe_load(f)
+
+        msg = "No '%s' section found in YAML"
+        for i in ("aggregate", "metric"):
+            if i not in yaml_data:
+                raise exception.InvalidReportDefinition(msg % i)
+
+        for name, metric in yaml_data["metric"].iteritems():
+            msg = "Missing '%s' field in metric '%s'"
+            for i in ("aggregate", "metric", "collector"):
+                if i not in metric:
+                    raise exception.MissingMetricFields(msg % (i, name))
+
+            if not isinstance(metric["aggregate"], str):
+                msg = "More than one aggregate defined for metric '%s'"
+                raise exception.InvalidReportDefinition(msg % name)
+
+            if metric["aggregate"] not in yaml_data["aggregate"]:
+                msg = "Aggregate '%s' for metric '%s' not found"
+                raise exception.AggregateNotFound(msg % (metric["aggregate"],
+                                                         name))
+
+        return yaml_data
 
     def _get_collector_kwargs(self, d):
         """Fills the keyword args for the collector method."""
@@ -86,24 +107,8 @@ class Report(object):
             logger.debug("(Collector: %s, Metric: %s)"
                          % (collector_name, metric_name))
 
-            try:
-                group_by_list = self.aggregate[conf["aggregate"]].keys() or []
-                logger.debug("Aggregate's group_by parameters: %s" %
-                             group_by_list)
-                # FIXME (orviz) multiple group_by in an aggregate definition
-                # must be supported
-                if len(group_by_list) != 1:
-                    msg = ("You must define one and only one 'group_by' "
-                           "(project, group) parameter")
-                    raise achus.exception.AggregateException(msg)
-            # FIXME (orviz) same here but in the metric definition
-            except TypeError:
-                msg = "You must define one and only one aggregate per metric"
-                raise achus.exception.AggregateException(msg)
-            except KeyError:
-                msg = "Could not find '%s' aggregate definition"
-                raise achus.exception.AggregateException(msg %
-                                                         conf["aggregate"])
+            group_by_list = self.aggregate[conf["aggregate"]].keys() or []
+            logger.debug("Aggregate's group_by parameters: %s" % group_by_list)
 
             for group_by in group_by_list:
                 # Add group_by to the condition list

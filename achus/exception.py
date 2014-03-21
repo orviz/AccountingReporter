@@ -10,9 +10,17 @@ class ClassNotFound(Exception):
     pass
 
 
-class AggregateException(Exception):
+class CollectorNotFound(Exception):
     pass
 
 
-class CollectorNotFound(Exception):
+class InvalidReportDefinition(Exception):
+    pass
+
+
+class MissingMetricFields(InvalidReportDefinition):
+    pass
+
+
+class AggregateNotFound(InvalidReportDefinition):
     pass
