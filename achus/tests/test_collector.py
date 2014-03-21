@@ -11,9 +11,6 @@ class CollectorTest(test.TestCase):
 
         self.collector = collector.BaseCollector()
 
-    def test_seconds_to_hours_conversion(self):
-        self.assertEqual(1, self.collector._to_hours(3600))
-
     def test_base_collector_get_cpu_time_not_implemented(self):
         self.assertRaises(NotImplementedError,
                           self.collector.get_cpu_time)
