@@ -1,6 +1,7 @@
 from achus import collector
 from achus import exception
 from achus import test
+from achus.tests import fixtures
 
 ALL_COLLECTORS = ['GECollector']
 
@@ -9,6 +10,7 @@ class CollectorTest(test.TestCase):
     def setUp(self):
         super(CollectorTest, self).setUp()
 
+        self.valid_filters = fixtures.filter_map
         self.collector = collector.BaseCollector()
 
     def test_base_collector_get_cpu_time_not_implemented(self):
@@ -20,47 +22,7 @@ class CollectorTest(test.TestCase):
                           self.collector.get_efficiency)
 
     def test_expand_wilcards_in(self):
-        value_result_map = (
-            (
-                [],
-                {}
-            ),
-            (
-                ["foo", "bar", "baz"],
-                {'IN': {'baz', 'foo', 'bar'}}
-            ),
-            (
-                ["foo", "bar", "foo", "baz", "bar", "baz"],
-                {'IN': {'baz', 'foo', 'bar'}}
-            ),
-            (
-                ["*"],
-                {'IN': {'*'}}
-            ),
-            (
-                ["!foo", "bar", "baz"],
-                {'NOT IN': {'foo'}, 'IN': {'baz', 'bar'}}
-            ),
-            (
-                ["foo*", "*bar", "b*z"],
-                {'CONTAINS': {'foo*', '*bar', 'b*z'}}
-            ),
-            (
-                ["!foo*", "!*bar", "!b*z"],
-                {'NOT CONTAINS': {'foo*', '*bar', 'b*z'}}
-            ),
-            (
-                ["!*"],
-                {'NOT CONTAINS': {'*'}}
-            ),
-            (
-                ["foo", "!bar", "*baz", "!bazonk*"],
-                {'IN': {'foo'},
-                 'NOT IN': {'bar'},
-                 'CONTAINS': {'*baz'}, 'NOT CONTAINS': {'bazonk*'}}
-            ),
-        )
-        for value, expected_result in value_result_map:
+        for value, expected_result in self.valid_filters:
             self.assertEqual(expected_result,
                              self.collector._expand_wildcards(value))
 
