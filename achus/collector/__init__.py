@@ -67,18 +67,34 @@ class BaseCollector(object):
         Query language format of each of groups detected by the
         expand_wildcard function.
         """
+        def _format(operator, param, match, match_replace=None):
+            if match_replace:
+                match = set([i.replace(*match_replace) for i in match])
+            if operator in ("IN", "NOT IN"):
+                match_str = "(%s)" % ", ".join(["'%s'" % i for i in match])
+                ret = ["%s %s %s" % (param, operator, match_str)]
+            else:
+                ret = ["%s %s '%s'" % (param, operator, i) for i in match]
+            return ret
+
+        def _format_in(param, match):
+            return _format("IN", param, match)
+
+        def _format_not_in(param, match):
+            return _format("NOT IN", param, match)
+
+        def _format_like(param, match):
+            return _format("LIKE", param, match, match_replace=('*', '%'))
+
+        def _format_not_like(param, match):
+            return _format("NOT LIKE", param, match, match_replace=('*', '%'))
+
         d = {
             "sql": {
-                "IN": lambda param, match_list: [
-                    "%s IN %s" % (param, tuple(match_list))],
-                "NOT IN": lambda param, match_list: [
-                    "%s NOT IN %s" % (param, tuple(match_list))],
-                "CONTAINS": lambda param, match_list: [
-                    "%s LIKE '%s'" % (param, match.replace('*', '%'))
-                    for match in match_list],
-                "NOT CONTAINS": lambda param, match_list: [
-                    "%s NOT LIKE '%s'" % (param, match.replace('*', '%'))
-                    for match in match_list],
+                "IN": _format_in,
+                "NOT IN": _format_not_in,
+                "CONTAINS": _format_like,
+                "NOT CONTAINS": _format_not_like,
             }
         }
 
