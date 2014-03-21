@@ -20,10 +20,6 @@ logger = logging.getLogger(__name__)
 
 
 class BaseCollector(object):
-    # FIXME this method should not be inside any connector class
-    def _to_hours(self, seconds):
-        return round((float(seconds) / 3600), 2)
-
     def _expand_wildcards(self, value_list):
         """Expand wildcards.
 
