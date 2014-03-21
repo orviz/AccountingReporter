@@ -3,7 +3,7 @@ import logging
 from oslo.config import cfg
 import yaml
 
-from achus import collector
+import achus.collector
 from achus import exception
 import achus.renderer
 import achus.renderer.chart
@@ -26,7 +26,7 @@ class Report(object):
     """Main class, triggers reports based on the input given."""
 
     def __init__(self):
-        self.collector_handler = collector.CollectorHandler()
+        self.collector_handler = achus.collector.CollectorHandler()
         self.available_collectors = self.collector_handler.get_all_classes()
 
         self.renderer = achus.renderer.Renderer()
@@ -103,7 +103,7 @@ class Report(object):
             collector_name = conf["collector"]
             metric_name = conf["metric"]
 
-            self.conn = collectors[collector_name]()
+            collector = collectors[collector_name]()
             logger.debug("(Collector: %s, Metric: %s)"
                          % (collector_name, metric_name))
 
@@ -117,7 +117,7 @@ class Report(object):
                 kwargs = self._get_collector_kwargs(conf)
                 logger.debug("Passing kwargs to the collector: %s"
                              % kwargs)
-                metric = self.conn.get(conf["metric"], group_by, **kwargs)
+                metric = collector.get(conf["metric"], group_by, **kwargs)
                 logger.debug("Result from collector: '%s'" % metric)
 
             self.renderer.append_metric(title, metric, conf)
