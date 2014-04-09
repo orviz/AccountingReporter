@@ -18,21 +18,20 @@ aggregate:
             - iberlife
     local:
         group:
-            - hidra
-            - astro
-            - lqcd
+            - '**'
+            - cms
 
 metric:
     "CPU usage per GROUP (in seconds)":
         collector: GECollector
         metric: cpu
-        aggregate: grid
+        aggregate: local
         chart: pie
         start_time: "2013-01-01 00:00"
         end_time: "2013-02-01 00:00"
 
-    "Efficiency per GROUP":
-        collector: GECollector
-        metric: efficiency
-        aggregate: grid
-        chart: horizontal_bar
+    #"Efficiency per GROUP":
+    #    collector: GECollector
+    #    metric: efficiency
+    #    aggregate: grid
+    #    chart: horizontal_bar
