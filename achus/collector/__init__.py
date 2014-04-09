@@ -23,8 +23,8 @@ class BaseCollector(object):
     def _expand_wildcards(self, value_list):
         """Expand wildcards.
 
-        Analyses recursively the contents of the list of matches defined,
-        building a dict with four types of matches:
+        Analyses the contents of the list of matches defined, building a
+        dict with four types of matches:
             IN          : exact positive match (and '*')
             NOT IN      : exact negative match
             CONTAINS    : partial positive match
@@ -33,6 +33,7 @@ class BaseCollector(object):
             value_list: list of matches requested in the report definition.
         """
         result = {}
+        do_proportion = False
         for v in set(value_list):
             if v.startswith("!"):
                 v = v[1:]
@@ -44,6 +45,9 @@ class BaseCollector(object):
                     index = "NOT CONTAINS"
                 else:
                     index = "NOT IN"
+            elif v == "**":
+                do_proportion = True
+                continue
             else:
                 if "*" in v and v != "*":
                     index = "CONTAINS"
@@ -55,7 +59,7 @@ class BaseCollector(object):
                 raise exception.CollectorException("Duplicated rule for %s" %
                                                    v)
             result.setdefault(index, set()).add(v)
-        return result
+        return do_proportion, result
 
     def _format_wildcard(self, condition, value, query_type="sql"):
         """Format the wilcards into backend queries.
@@ -94,6 +98,15 @@ class BaseCollector(object):
             }
         }
 
+        d_negate = {
+            "sql": {
+                "IN": "NOT IN",
+                "NOT IN": "IN",
+                "CONTAINS": "NOT CONTAINS",
+                "NOT CONTAINS": "CONTAINS",
+            }
+        }
+
         try:
             d[query_type]
         except KeyError:
@@ -103,13 +116,19 @@ class BaseCollector(object):
         # _expand_wildcards iterates over a list
         if not isinstance(value, list):
             value = [value]
-        d_condition = self._expand_wildcards(value)
+        do_proportion, d_condition = self._expand_wildcards(value)
         logger.debug("Wildcard expanding result: %s" % d_condition)
 
         r = []
+        r_negate = []
         for mtype, mset in d_condition.iteritems():
             r.extend(d[query_type][mtype](condition, mset))
-        return r
+            if do_proportion:
+                r_negate.extend(d[query_type][d_negate[query_type][mtype]](condition, mset))
+        # Sort the results to get an expected output (unittest)
+        r.sort()
+        r_negate.sort()
+        return r, r_negate
 
     def _format_conditions(self, **kw):
         raise NotImplementedError
