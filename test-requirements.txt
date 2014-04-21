@@ -5,6 +5,7 @@ hacking
 mock
 nose
 pep8==1.4.5
+pyflakes>=0.7.2,<0.7.4
 testtools
 
 oslo.config
