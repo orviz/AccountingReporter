@@ -1,8 +1,8 @@
 import contextlib
 import logging
 
-import MySQLdb as mdb
 import _mysql_exceptions
+import MySQLdb as mdb
 from oslo.config import cfg
 
 from achus import collector
@@ -58,7 +58,7 @@ class GECollector(collector.BaseCollector):
         l = []
         for arg in args:
             l_sub = []
-            for i in arg: 
+            for i in arg:
                 if type(i) in [decimal.Decimal, long, int, float]:
                     i = float(i)
                 l_sub.append(i)
@@ -75,7 +75,6 @@ class GECollector(collector.BaseCollector):
         condition_list = [cond for cond in self.DEFAULT_CONDITIONS]
         condition_wildcard_list = []
 
-        do_proportion = False
         for k, v in kw.iteritems():
             logger.debug("Analysing condition (%s, %s)" % (k, v))
             if k in CONDITION_OPERATORS.keys():
@@ -94,13 +93,14 @@ class GECollector(collector.BaseCollector):
                 if l_negate:
                     aux_negate = "".join(['(', " OR ".join(l_negate), ')'])
                     condition_wildcard_list.append(aux_negate)
-                    logging.debug("Negative wildcard condition formatted to: %s"
-                                  % aux_negate)
+                    logging.debug("Negative wildcard condition formatted to: "
+                                  "%s" % aux_negate)
 
         l = []
         if condition_wildcard_list:
             for condition_wildcard in condition_wildcard_list:
-                l.append(" ".join(["WHERE", " AND ".join([condition_wildcard] + condition_list)]))
+                l.append(" ".join(["WHERE", " AND ".join([condition_wildcard]
+                                                         + condition_list)]))
         else:
             l.append(" ".join(["WHERE", " AND ".join(condition_list)]))
         logger.debug(l)
@@ -121,11 +121,11 @@ class GECollector(collector.BaseCollector):
                                CONF.gecollector.password,
                                CONF.gecollector.dbname,
                                CONF.gecollector.port)
-        except _mysql_exceptions.OperationalError, e:
+        except _mysql_exceptions.OperationalError as e:
             raise exception.MySQLBackendException(str(e))
 
         with contextlib.closing(conn):
-            curs = conn.cursor() 
+            curs = conn.cursor()
             l = self._format_conditions(**conditions)
 
             for c in l:
@@ -144,17 +144,19 @@ class GECollector(collector.BaseCollector):
                 curs.execute(cmd)
                 res = self._format_result(*curs.fetchall())
                 logger.debug("MySQL query (formatted) result: %s" % res)
-            
+
                 if cond_negate:
                     cmd = ("SELECT %s, SUM(%s) FROM ge_jobs %s"
-                            % (','.join(group_by[1:]),
+                           % (','.join(group_by[1:]),
                               self.FIELD_MAPPING[parameter],
                               cond_negate))
                     if group_by[1:]:
-                        cmd = ' '.join([' '.join([cmd, "GROUP BY "])]+group_by[1:])
+                        cmd = ' '.join([' '.join([cmd, "GROUP BY "])]
+                                       + group_by[1:])
                     logger.debug("Proportion MySQL command: `%s`" % cmd)
                     curs.execute(cmd)
-                    leftover = self._format_result(*[("leftover",)+r for r in curs.fetchall()])
+                    aux = [("leftover",) + r for r in curs.fetchall()]
+                    leftover = self._format_result(*aux)
                     logger.debug("Proportion leftover: %s" % leftover)
                     res.extend(leftover)
 
@@ -184,7 +186,7 @@ class GECollector(collector.BaseCollector):
         conditions: extra conditions to be added to the SQL query.
         """
         d = {}
-        for item in self.query("wall_clock", 
+        for item in self.query("wall_clock",
                                [group_by, "ge_slots"],
                                conditions=conditions):
             index, slots, values = item

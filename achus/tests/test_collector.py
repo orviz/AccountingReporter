@@ -63,15 +63,22 @@ class CollectorTest(test.TestCase):
             ),
             (
                 ["foo", "!bar", "**"],
-                (["prj IN ('foo')", "prj NOT IN ('bar')"], ["prj IN ('bar')", "prj NOT IN ('foo')"])
+                (["prj IN ('foo')", "prj NOT IN ('bar')"],
+                 ["prj IN ('bar')", "prj NOT IN ('foo')"])
             ),
             (
                 ["foo*", "*bar", "!baz*"],
-                (["prj LIKE '%bar'", "prj LIKE 'foo%'", "prj NOT LIKE 'baz%'"], [])
+                (["prj LIKE '%bar'", "prj LIKE 'foo%'", "prj NOT LIKE 'baz%'"],
+                 [])
             ),
             (
                 ["foo*", "*bar", "!baz*", "**"],
-                (["prj LIKE '%bar'", "prj LIKE 'foo%'", "prj NOT LIKE 'baz%'"], ["prj LIKE 'baz%'", "prj NOT LIKE '%bar'", "prj NOT LIKE 'foo%'"])
+                (["prj LIKE '%bar'",
+                  "prj LIKE 'foo%'",
+                  "prj NOT LIKE 'baz%'"],
+                 ["prj LIKE 'baz%'",
+                  "prj NOT LIKE '%bar'",
+                  "prj NOT LIKE 'foo%'"])
             ),
             (
                 "**",

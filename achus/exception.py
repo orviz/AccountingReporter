@@ -25,5 +25,6 @@ class MissingMetricFields(InvalidReportDefinition):
 class AggregateNotFound(InvalidReportDefinition):
     pass
 
+
 class MySQLBackendException(Exception):
     pass

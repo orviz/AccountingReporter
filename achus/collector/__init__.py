@@ -124,7 +124,9 @@ class BaseCollector(object):
         for mtype, mset in d_condition.iteritems():
             r.extend(d[query_type][mtype](condition, mset))
             if do_proportion:
-                r_negate.extend(d[query_type][d_negate[query_type][mtype]](condition, mset))
+                aux = d[query_type][d_negate[query_type][mtype]](condition,
+                                                                 mset)
+                r_negate.extend(aux)
         # Sort the results to get an expected output (unittest)
         r.sort()
         r_negate.sort()
