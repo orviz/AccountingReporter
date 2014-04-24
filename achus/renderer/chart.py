@@ -35,8 +35,7 @@ class Chart(achus.renderer.base.Renderer):
             return
 
         if metric_definition["chart"] not in self.chart_types:
-            raise exception.UnknownChartType('Chart "%s" is unknown' %
-                                             metric_definition["chart"])
+            raise exception.UnknownChartType(chart=metric_definition["chart"])
         self.metrics.append((title, metric, metric_definition))
 
     def _generate_charts(self):

@@ -73,63 +73,56 @@ class ReporterTest(test.TestCase):
         del self.report_def["aggregate"]
         y = yaml.safe_dump(self.report_def)
         self._mock_open_and_assert(y,
-                                   self.assertRaisesRegexp,
-                                   exception.InvalidReportDefinition,
-                                   "No 'aggregate' section",
+                                   self.assertRaises,
+                                   exception.MissingSection,
                                    reporter.Report)
 
     def test_load_yaml_no_metric(self):
         del self.report_def["metric"]
         y = yaml.safe_dump(self.report_def)
         self._mock_open_and_assert(y,
-                                   self.assertRaisesRegexp,
-                                   exception.InvalidReportDefinition,
-                                   "No 'metric' section",
+                                   self.assertRaises,
+                                   exception.MissingSection,
                                    reporter.Report)
 
     def test_load_yaml_metric_with_missing_aggregate(self):
         del self.report_def["metric"]["foo"]["aggregate"]
         y = yaml.safe_dump(self.report_def)
         self._mock_open_and_assert(y,
-                                   self.assertRaisesRegexp,
-                                   exception.InvalidReportDefinition,
-                                   "Missing 'aggregate'.*metric 'foo'$",
+                                   self.assertRaises,
+                                   exception.MissingMetricFields,
                                    reporter.Report)
 
     def test_load_yaml_metric_with_missing_metric(self):
         del self.report_def["metric"]["foo"]["metric"]
         y = yaml.safe_dump(self.report_def)
         self._mock_open_and_assert(y,
-                                   self.assertRaisesRegexp,
-                                   exception.InvalidReportDefinition,
-                                   "Missing 'metric'.*metric 'foo'$",
+                                   self.assertRaises,
+                                   exception.MissingMetricFields,
                                    reporter.Report)
 
     def test_load_yaml_metric_with_missing_collector(self):
         del self.report_def["metric"]["foo"]["collector"]
         y = yaml.safe_dump(self.report_def)
         self._mock_open_and_assert(y,
-                                   self.assertRaisesRegexp,
-                                   exception.InvalidReportDefinition,
-                                   "Missing 'collector'.*metric 'foo'$",
+                                   self.assertRaises,
+                                   exception.MissingMetricFields,
                                    reporter.Report)
 
     def test_load_yaml_metric_without_aggregate(self):
         del self.report_def["aggregate"]["foo"]
         y = yaml.safe_dump(self.report_def)
         self._mock_open_and_assert(y,
-                                   self.assertRaisesRegexp,
-                                   exception.InvalidReportDefinition,
-                                   "Aggregate 'foo'.*not found$",
+                                   self.assertRaises,
+                                   exception.AggregateNotFound,
                                    reporter.Report)
 
     def test_load_yaml_metric_with_several_aggregates(self):
         self.report_def["metric"]["foo"]["aggregate"] = ["foo", "bar"]
         y = yaml.safe_dump(self.report_def)
         self._mock_open_and_assert(y,
-                                   self.assertRaisesRegexp,
-                                   exception.InvalidReportDefinition,
-                                   "More than",
+                                   self.assertRaises,
+                                   exception.DuplicatedAggregate,
                                    reporter.Report)
 
     def test_load_good_metric_with_several_aggregates(self):

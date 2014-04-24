@@ -39,8 +39,8 @@ class BaseCollector(object):
                 v = v[1:]
                 if not v:
                     # FIXME(aloga): check this message
-                    raise exception.CollectorException("Cannot just negate "
-                                                       "a match!")
+                    raise exception.CollectorException(
+                        message="Cannot just negate a match!")
                 if "*" in v:
                     index = "NOT CONTAINS"
                 else:
@@ -56,8 +56,7 @@ class BaseCollector(object):
 
             if v in set().union(*result.values()):
                 # FIXME(aloga): check this message
-                raise exception.CollectorException("Duplicated rule for %s" %
-                                                   v)
+                raise exception.CollectorException(rule=v)
             result.setdefault(index, set()).add(v)
         return do_proportion, result
 
@@ -110,8 +109,7 @@ class BaseCollector(object):
         try:
             d[query_type]
         except KeyError:
-            raise exception.CollectorException("Query language '%s' not known"
-                                               % query_type)
+            raise exception.CollectorException(lang=query_type)
 
         # _expand_wildcards iterates over a list
         if not isinstance(value, list):
