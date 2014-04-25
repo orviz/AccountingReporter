@@ -122,7 +122,7 @@ class GECollector(collector.BaseCollector):
                                CONF.gecollector.dbname,
                                CONF.gecollector.port)
         except _mysql_exceptions.OperationalError as e:
-            raise exception.MySQLBackendException(str(e))
+            raise exception.MySQLBackendException(message=str(e))
 
         with contextlib.closing(conn):
             curs = conn.cursor()
@@ -208,8 +208,7 @@ class GECollector(collector.BaseCollector):
         d_wall = self.get_wall_clock(group_by,
                                      conditions=conditions)
         if len(d_cpu.keys()) != len(d_wall.keys()):
-            raise exception.CollectorException("Cannot compute efficiency. "
-                                               "Groups do not match!")
+            raise exception.CannotComputeEfficiency()
         for k, v in d_cpu.iteritems():
             try:
                 d[k] = round(((d_cpu[k]/d_wall[k])*100), 2)

@@ -41,25 +41,22 @@ class Report(object):
         with open(CONF.report_definition, "rb") as f:
             yaml_data = yaml.safe_load(f)
 
-        msg = "No '%s' section found in YAML"
         for i in ("aggregate", "metric"):
             if i not in yaml_data:
-                raise exception.InvalidReportDefinition(msg % i)
+                raise exception.MissingSection(section=i)
 
         for name, metric in yaml_data["metric"].iteritems():
-            msg = "Missing '%s' field in metric '%s'"
             for i in ("aggregate", "metric", "collector"):
                 if i not in metric:
-                    raise exception.MissingMetricFields(msg % (i, name))
+                    raise exception.MissingMetricFields(metric=name,
+                                                        field=i)
 
             if not isinstance(metric["aggregate"], str):
-                msg = "More than one aggregate defined for metric '%s'"
-                raise exception.InvalidReportDefinition(msg % name)
+                raise exception.DuplicatedAggregate(metric=name)
 
             if metric["aggregate"] not in yaml_data["aggregate"]:
-                msg = "Aggregate '%s' for metric '%s' not found"
-                raise exception.AggregateNotFound(msg % (metric["aggregate"],
-                                                         name))
+                raise exception.AggregateNotFound(
+                    metric=name, aggregate=metric["aggregate"])
 
         return yaml_data
 
@@ -90,7 +87,7 @@ class Report(object):
 
         if bad_collectors:
             msg = ", ".join(bad_collectors)
-            raise exception.CollectorNotFound(msg)
+            raise exception.CollectorNotFound(collector=msg)
 
         return good_collectors
 
