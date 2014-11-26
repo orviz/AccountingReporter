@@ -9,3 +9,7 @@
 build/*
 dist/*
 etc/test.conf
+
+doc/_build
+doc/_static
+doc/_templates
